@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>VirexDL | v4.0</title>
     
     <link rel="manifest" href="manifest.json">
@@ -47,12 +47,26 @@
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
         .pt-safe { padding-top: env(safe-area-inset-top, 10px); }
         
+        /* Responsive behavior for compact phones, tall screens, tablets and desktop WebViews */
+        *, *::before, *::after { box-sizing: border-box; }
+        img, video, canvas, svg { max-width: 100%; }
+        button, input, select, textarea { font: inherit; }
+        button { touch-action: manipulation; }
+        .safe-content { padding-left: max(env(safe-area-inset-left, 0px), 0px); padding-right: max(env(safe-area-inset-right, 0px), 0px); }
+        @supports not (height: 100dvh) { html, body { height: 100vh; } }
+        @media (max-width: 360px) {
+            .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #full-player { padding-left: 16px; padding-right: 16px; }
+        }
+        @media (min-width: 700px) {
+            #main-scroll { max-width: 900px; margin-left: auto; margin-right: auto; }
+        }
         html, body {
-            height: 100dvh; width: 100vw;
+            height: 100%; min-height: 100vh; height: 100dvh; width: 100%;
             background-color: #000000; color: #FFF; font-family: 'Outfit', sans-serif;
             overflow: hidden; -webkit-tap-highlight-color: transparent;
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-            overscroll-behavior: none; position: fixed; top: 0; left: 0;
+            overscroll-behavior: none; position: fixed; inset: 0;
         }
         #main-scroll { -webkit-overflow-scrolling: touch; overflow-y: auto; overscroll-behavior-y: contain; }
         #queue-list, #sp-songs-list { -webkit-overflow-scrolling: touch; }
@@ -541,15 +555,6 @@
                     <button id="cf-toggle" class="w-12 h-6 rounded-full relative transition-all duration-300 focus:outline-none" onclick="toggleConfig('crossfade')" style="background: #444">
                         <div class="toggle-thumb w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all duration-300 shadow-sm"></div>
                     </button>
-                </div>
-
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Backup & Restore</p>
-                    <div class="flex gap-2">
-                        <button onclick="exportData()" class="flex-1 bg-[#222] py-3 rounded-xl text-xs font-bold hover:bg-[#333] border border-white/5"><i class="fas fa-download mr-1"></i> Save</button>
-                        <button onclick="document.getElementById('import-file').click()" class="flex-1 bg-[#222] py-3 rounded-xl text-xs font-bold hover:bg-[#333] border border-white/5"><i class="fas fa-upload mr-1"></i> Load</button>
-                        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(this)">
-                    </div>
                 </div>
             </div>
         </div>
