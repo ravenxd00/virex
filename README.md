@@ -20,3 +20,6 @@ Virex is being rebuilt as a **native Android application** using Kotlin, Jetpack
 ## Important testing notes
 
 This is a debug build until it has been compiled and tested on physical devices. The external music API and audio URLs can change or be unavailable. Background playback, notifications, downloads, and offline playback must be tested on the target Android version before calling the app release-ready. The original website remains on the default branch; native changes are isolated on `native-android`.
+
+
+Native build workflow was configured on the default branch; new commits on this branch trigger an APK build.
