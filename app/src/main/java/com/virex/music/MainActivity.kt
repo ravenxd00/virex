@@ -107,7 +107,19 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
  val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if(!granted) message="Playback notification permission was denied. You can enable it in Android Settings." }
  LaunchedEffect(Unit) { delay(1500); splashVisible=false; if(Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED && !prefs.getBoolean("notification_prompted",false)) { delay(350); prefs.edit().putBoolean("notification_prompted",true).apply(); notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } }
 
- LaunchedEffect(future) { runCatching { future?.get() }.onSuccess { player=it }.onFailure { message="Player unavailable. Please restart the app." } }
+ DisposableEffect(future) {
+  val pending = future
+  if (pending != null) {
+   pending.addListener({
+    try {
+     player = pending.get()
+    } catch (e: Exception) {
+     message = "Player unavailable. Please restart the app."
+    }
+   }, ContextCompat.getMainExecutor(context))
+  }
+  onDispose { }
+ }
  DisposableEffect(player) { val c=player; val l=object: Player.Listener { override fun onIsPlayingChanged(v:Boolean){playing=v}; override fun onMediaItemTransition(item:MediaItem?,reason:Int){current=c?.currentMediaItem?.localConfiguration?.tag as? Track} }; c?.addListener(l); onDispose { c?.removeListener(l) } }
  fun savePlaylists() { val a=JSONArray(); playlists.forEach { p -> val s=JSONArray(); p.songs.forEach { s.put(trackJson(it)) }; a.put(JSONObject().put("id",p.id).put("name",p.name).put("songs",s)) }; prefs.edit().putString("playlists",a.toString()).apply() }
  fun play(t:Track,list:List<Track>) { if(t.streamUrl.isBlank() && (t.localPath==null || !File(t.localPath).exists())) { message="This result has no playable audio URL."; return }; val c=player ?: run { message="Player is starting. Try again."; return }; val q=list.ifEmpty { listOf(t) }; queue=q; val index=q.indexOfFirst { it.id==t.id }.coerceAtLeast(0); c.setMediaItems(q.map { x -> MediaItem.Builder().setMediaId(x.id).setUri(if(x.localPath!=null && File(x.localPath).exists()) "file://"+x.localPath else x.streamUrl).setMediaMetadata(MediaMetadata.Builder().setTitle(x.title).setArtist(x.artist).setArtworkUri(x.image.takeIf { it.startsWith("http") }?.let(android.net.Uri::parse)).build()).setTag(x).build() },index,0L); current=t; c.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}; c.prepare(); c.play(); showPlayer=true }
