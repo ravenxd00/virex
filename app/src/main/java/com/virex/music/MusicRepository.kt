@@ -16,31 +16,57 @@ class MusicRepository {
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
         .callTimeout(90, TimeUnit.SECONDS).build()
 
-    suspend fun search(query: String): List<Track> = withContext(Dispatchers.IO) {
+    suspend fun search(query: String, highQuality: Boolean = true): List<Track> = withContext(Dispatchers.IO) {
         require(query.isNotBlank()) { "Enter a song or artist to search." }
         val encoded = URLEncoder.encode(query, "UTF-8")
-        val request = Request.Builder().url("https://jiosavan-api2.vercel.app/api/search/songs?query=$encoded&limit=25").build()
+        val request = Request.Builder()
+            .url("https://jiosavan-api2.vercel.app/api/search/songs?query=$encoded&limit=25")
+            .header("Accept", "application/json")
+            .header("User-Agent", "VirexDL-Android/1.0")
+            .build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("Music service returned HTTP ${response.code}")
-            val root = JSONObject(response.body?.string().orEmpty())
+            val raw = response.body?.string().orEmpty()
+            val root = JSONObject(raw)
             val data = root.optJSONObject("data") ?: root
-            val results = data.optJSONArray("results") ?: data.optJSONArray("songs") ?: JSONArray()
+            val results = data.optJSONArray("results")
+                ?: data.optJSONArray("songs")
+                ?: root.optJSONArray("results")
+                ?: root.optJSONArray("songs")
+                ?: JSONArray()
             buildList {
                 for (i in 0 until results.length()) {
                     val item = results.optJSONObject(i) ?: continue
                     val artists = item.optJSONObject("artists")
                     val primary = artists?.optJSONArray("primary")
                     val artist = primary?.optJSONObject(0)?.optString("name").orEmpty()
-                        .ifBlank { item.optString("artist").ifBlank { "Unknown artist" } }
+                        .ifBlank { item.optString("artist").ifBlank { item.optString("subtitle").ifBlank { "Unknown artist" } } }
                     val images = item.optJSONArray("image")
-                    val image = findUrl(images)
-                    val stream = findUrl(item.optJSONArray("downloadUrl") ?: item.optJSONArray("download_url"))
-                        .ifBlank { item.optString("url") }
-                    if (stream.startsWith("https://") || stream.startsWith("http://")) {
-                        add(Track(item.optString("id").ifBlank { "track_$i" },
-                            item.optString("name", "Unknown song").ifBlank { "Unknown song" }, artist, image, stream,
-                            item.optString("duration").toIntOrNull() ?: item.optInt("duration", 0)))
+                    val image = findUrl(images).ifBlank {
+                        item.optString("image").takeIf { it.startsWith("http") }.orEmpty()
                     }
+                    val audioList = item.optJSONArray("downloadUrl") ?: item.optJSONArray("download_url")
+                    val desiredQuality = if (highQuality) "320kbps" else "160kbps"
+                    var stream = ""
+                    if (audioList != null) {
+                        for (j in 0 until audioList.length()) {
+                            val audio = audioList.optJSONObject(j) ?: continue
+                            if (audio.optString("quality").equals(desiredQuality, true)) {
+                                stream = audio.optString("url")
+                                break
+                            }
+                        }
+                        if (stream.isBlank()) stream = findUrl(audioList)
+                    }
+                    if (stream.isBlank()) {
+                        stream = item.optJSONObject("downloadUrl")?.optString("url").orEmpty()
+                            .ifBlank { item.optString("url").takeIf { it.startsWith("http") }.orEmpty() }
+                    }
+                    val title = item.optString("name").ifBlank { item.optString("title").ifBlank { "Unknown song" } }
+                    val id = item.optString("id").ifBlank { "${title}_${artist}_$i" }
+                    if (title.isNotBlank()) add(
+                        Track(id, title, artist, image, stream, item.optString("duration").toIntOrNull() ?: item.optInt("duration", 0))
+                    )
                 }
             }
         }
