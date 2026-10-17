@@ -206,17 +206,14 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
 
 @Composable private fun CenterMessage(message:String,accent:Color){Box(Modifier.fillMaxSize().padding(24.dp),contentAlignment=Alignment.Center){Column(horizontalAlignment=Alignment.CenterHorizontally){Icon(Icons.Default.MusicNote,null,tint=accent.copy(alpha=.7f),modifier=Modifier.size(42.dp));Spacer(Modifier.height(12.dp));Text(message,color=Grey,textAlign=androidx.compose.ui.text.style.TextAlign.Center)}}}
 @Composable private fun SiteTrackCard(t:Track,accent:Color,isDownloaded:Boolean,isDownloading:Boolean,onPlay:()->Unit,onDownload:()->Unit,onAdd:()->Unit){
- Column(Modifier.fillMaxWidth().height(264.dp).clip(RoundedCornerShape(21.dp)).background(Color(0xFF111111)).clickable{onPlay()}.padding(10.dp)){
-  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp))){
+ Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF111111)).border(1.dp,Color.White.copy(alpha=.05f),RoundedCornerShape(12.dp)).clickable{onPlay()}.padding(12.dp)){
+  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(8.dp)).background(Color(0xFF222222))){
    AsyncImage(model=t.image,contentDescription=null,modifier=Modifier.fillMaxSize())
-   IconButton(onClick=onAdd,modifier=Modifier.align(Alignment.TopEnd).size(48.dp).background(Color.Black.copy(alpha=.66f),CircleShape)){Icon(Icons.Default.Add,null,tint=Color.White,modifier=Modifier.size(29.dp))}
+   IconButton(onClick=onAdd,modifier=Modifier.align(Alignment.TopEnd).padding(6.dp).size(32.dp).background(Color.Black.copy(alpha=.5f),CircleShape)){Icon(Icons.Default.Add,null,tint=Color.White,modifier=Modifier.size(17.dp))}
   }
-  Spacer(Modifier.height(10.dp))
-  Text(t.title,fontSize=15.sp,fontWeight=FontWeight.Bold,color=Color(0xFFF0EDF4),maxLines=1,overflow=TextOverflow.Ellipsis)
-  Spacer(Modifier.height(5.dp))
-  Text(t.artist,fontSize=14.sp,color=Color(0xFFA1A1A1),maxLines=1,overflow=TextOverflow.Ellipsis)
-  Spacer(Modifier.weight(1f))
-  Row(Modifier.fillMaxWidth().height(27.dp),horizontalArrangement=Arrangement.End,verticalAlignment=Alignment.CenterVertically){if(isDownloading)CircularProgressIndicator(Modifier.size(18.dp),color=accent,strokeWidth=2.dp) else IconButton(onClick=onDownload,modifier=Modifier.size(32.dp)){Icon(if(isDownloaded)Icons.Default.CheckCircle else Icons.Default.Download,null,tint=accent,modifier=Modifier.size(21.dp))}}
+  Spacer(Modifier.height(12.dp))
+  Text(t.title,fontSize=14.sp,fontWeight=FontWeight.Bold,color=Color.White,maxLines=1,overflow=TextOverflow.Ellipsis)
+  Text(t.artist,fontSize=12.sp,color=Color(0xFFA1A1A1),maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=3.dp))
  }
 }
 @Composable private fun TrackGrid(tracks:List<Track>,accent:Color,onPlay:(Track)->Unit,onDownload:(Track)->Unit,onAdd:(Track)->Unit){LazyVerticalGrid(columns=GridCells.Fixed(2),modifier=Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=16.dp,vertical=8.dp),horizontalArrangement=Arrangement.spacedBy(14.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){items(tracks,key={it.id}){t->SiteTrackCard(t,accent,false,false,{onPlay(t)},{onDownload(t)},{onAdd(t)})}}}
