@@ -2,9 +2,14 @@ package com.virex.music
 
 import android.content.ComponentName
 import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +45,8 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import coil.compose.AsyncImage
 import com.google.common.util.concurrent.ListenableFuture
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -52,13 +60,13 @@ private val Lime = Color(0xFF1DB954)
 private val Grey = Color(0xFFA1A1A1)
 private val Categories = listOf("Trending", "Punjabi", "Hip Hop", "Bollywood", "Global Hits", "Lofi Chill", "EDM")
 private val CategoryQueries = mapOf(
- "Trending" to listOf("Arijit Singh","Diljit Dosanjh","Karan Aujla","The Weeknd","Taylor Swift","Anirudh Ravichander"),
- "Punjabi" to listOf("Karan Aujla","Diljit Dosanjh","Sidhu Moose Wala","AP Dhillon","Shubh"),
- "Hip Hop" to listOf("Kendrick Lamar","Drake","Travis Scott","Divine","KRSNA","Eminem"),
- "Bollywood" to listOf("Arijit Singh","Pritam","Atif Aslam","Shreya Ghoshal","KK"),
- "Global Hits" to listOf("The Weeknd","Taylor Swift","Dua Lipa","Bruno Mars","Ed Sheeran"),
- "Lofi Chill" to listOf("Lofi Sleep","Indian Lofi","Chillhop","Aesthetic Beats"),
- "EDM" to listOf("Martin Garrix","Alan Walker","Avicii","David Guetta","Marshmello")
+ "Trending" to listOf("Arijit Singh","Diljit Dosanjh","Karan Aujla","The Weeknd","Taylor Swift","Anirudh Ravichander","Billie Eilish"),
+ "Punjabi" to listOf("Karan Aujla","Diljit Dosanjh","Sidhu Moose Wala","AP Dhillon","Shubh","Amrinder Gill","Jordan Sandhu"),
+ "Hip Hop" to listOf("Kendrick Lamar","Drake","Travis Scott","Divine","KRSNA","Eminem","MC Stan","Seedhe Maut"),
+ "Bollywood" to listOf("Arijit Singh","Pritam","Atif Aslam","Shreya Ghoshal","KK","Vishal Mishra","Mohit Chauhan"),
+ "Global Hits" to listOf("The Weeknd","Taylor Swift","Dua Lipa","Bruno Mars","Ed Sheeran","Ariana Grande","Post Malone"),
+ "Lofi Chill" to listOf("Lofi Sleep","Indian Lofi","Chillhop","Aesthetic Beats","Night Drives Lofi"),
+ "EDM" to listOf("Martin Garrix","Alan Walker","Avicii","David Guetta","Marshmello","DJ Snake","Chainsmokers")
 )
 
 class MainActivity : ComponentActivity() {
@@ -95,6 +103,9 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
  var hq by remember { mutableStateOf(prefs.getBoolean("hq",true)) }; var visualizer by remember { mutableStateOf(prefs.getBoolean("viz",true)) }; var crossfade by remember { mutableStateOf(prefs.getBoolean("crossfade",false)) }
  var shuffle by remember { mutableStateOf(false) }; var repeat by remember { mutableIntStateOf(0) }; var accent by remember { mutableStateOf(Color(prefs.getLong("accent",0xFF1DB954L))) }
  var lyrics by remember { mutableStateOf(emptyList<String>()) }; var lyricsBusy by remember { mutableStateOf(false) }
+ var splashVisible by remember { mutableStateOf(true) }
+ val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if(!granted) message="Playback notification permission was denied. You can enable it in Android Settings." }
+ LaunchedEffect(Unit) { delay(1500); splashVisible=false; if(Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) { delay(350); notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } }
 
  LaunchedEffect(future) { runCatching { future?.get() }.onSuccess { player=it }.onFailure { message="Player unavailable. Please restart the app." } }
  DisposableEffect(player) { val c=player; val l=object: Player.Listener { override fun onIsPlayingChanged(v:Boolean){playing=v}; override fun onMediaItemTransition(item:MediaItem?,reason:Int){current=c?.currentMediaItem?.localConfiguration?.tag as? Track} }; c?.addListener(l); onDispose { c?.removeListener(l) } }
@@ -130,6 +141,7 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
  if(showSettings)AlertDialog(onDismissRequest={showSettings=false},containerColor=Panel,title={Text("VirexDL Settings")},text={Column(verticalArrangement=Arrangement.spacedBy(10.dp)){SettingToggle("High quality audio","Prefer highest available audio quality",hq){hq=it;prefs.edit().putBoolean("hq",it).apply()};SettingToggle("Visualizer","Show player visualizer",visualizer){visualizer=it;prefs.edit().putBoolean("viz",it).apply()};SettingToggle("Crossfade","Crossfade between tracks",crossfade){crossfade=it;prefs.edit().putBoolean("crossfade",it).apply()};Text("Accent colour",color=Grey,fontSize=12.sp);Row(horizontalArrangement=Arrangement.spacedBy(12.dp)){listOf(0xFF1DB954L,0xFFB7FF2AL,0xFF36C5F0L,0xFFFF4D8DL,0xFFB388FFL).forEach{v->Box(Modifier.size(28.dp).clip(CircleShape).background(Color(v)).clickable{accent=Color(v);prefs.edit().putLong("accent",v).apply()})}}}},confirmButton={TextButton(onClick={showSettings=false}){Text("Done",color=accent)}})
  if(showQueue)AlertDialog(onDismissRequest={showQueue=false},containerColor=Panel,title={Text("Play queue")},text={LazyColumn(Modifier.heightIn(max=400.dp)){items(queue,key={it.id}){t->Row(Modifier.fillMaxWidth().clickable{play(t,queue);showQueue=false}.padding(vertical=6.dp),verticalAlignment=Alignment.CenterVertically){AsyncImage(model=t.image,contentDescription=null,modifier=Modifier.size(40.dp).clip(RoundedCornerShape(6.dp)));Spacer(Modifier.width(8.dp));Column(Modifier.weight(1f)){Text(t.title,maxLines=1,overflow=TextOverflow.Ellipsis);Text(t.artist,color=Grey,fontSize=11.sp)};if(current?.id==t.id)Icon(Icons.Default.VolumeUp,null,tint=accent)}}}},confirmButton={TextButton(onClick={showQueue=false}){Text("Close")}})
  if(showLyrics)AlertDialog(onDismissRequest={showLyrics=false},containerColor=Panel,title={Text("Lyrics")},text={Column(Modifier.heightIn(max=400.dp)){if(lyricsBusy)CircularProgressIndicator(color=accent)else if(lyrics.isEmpty()){Text("Load lyrics for this song.",color=Grey);TextButton(onClick={val t=current;if(t!=null)scope.launch{lyricsBusy=true;lyrics=withContext(Dispatchers.IO){repo.lyrics(t)};lyricsBusy=false}}){Text("Load lyrics",color=accent)}}else LazyColumn{items(lyrics){Text(it,fontWeight=FontWeight.SemiBold,modifier=Modifier.padding(vertical=4.dp))}}}},confirmButton={TextButton(onClick={showLyrics=false}){Text("Close",color=accent)}})
+ if(splashVisible) Box(Modifier.fillMaxSize().background(Color.Black),contentAlignment=Alignment.Center) { Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) { androidx.compose.foundation.Image(painter=painterResource(id=R.drawable.ic_virex),contentDescription="Virex logo",modifier=Modifier.size(218.dp)); Spacer(Modifier.height(12.dp)); Text("Virex",fontSize=58.sp,fontWeight=FontWeight.Medium,color=Color.White,letterSpacing=1.sp); Spacer(Modifier.height(5.dp)); Text("M U S I C   F O R   Y O U",fontSize=15.sp,fontWeight=FontWeight.SemiBold,color=Color(0xFFB7FF2A),letterSpacing=2.2.sp) } }
  if(showPlayer)current?.let{t->ModalBottomSheet(onDismissRequest={showPlayer=false},containerColor=Black,sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true)){Column(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(horizontal=22.dp),horizontalAlignment=Alignment.CenterHorizontally){Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){IconButton(onClick={showPlayer=false}){Icon(Icons.Default.KeyboardArrowDown,null)};Spacer(Modifier.weight(1f));Text("NOW PLAYING",fontSize=10.sp,letterSpacing=2.sp,color=Grey);Spacer(Modifier.weight(1f));IconButton(onClick={showQueue=true}){Icon(Icons.Default.QueueMusic,null)}};AsyncImage(model=t.image,contentDescription=null,modifier=Modifier.fillMaxWidth(.82f).aspectRatio(1f).clip(RoundedCornerShape(18.dp)));Spacer(Modifier.height(20.dp));Text(t.title,fontSize=23.sp,fontWeight=FontWeight.Bold,maxLines=1,overflow=TextOverflow.Ellipsis);Text(t.artist,color=Grey);Spacer(Modifier.height(22.dp));var seek by remember(t.id){mutableFloatStateOf(0f)};val duration=player?.duration?.takeIf{it>0}?:0L;LaunchedEffect(playing,t.id){while(true){if(duration>0)seek=(player?.currentPosition?.toFloat()?:0f)/duration.toFloat();kotlinx.coroutines.delay(500)}};Slider(value=seek.coerceIn(0f,1f),onValueChange={seek=it},onValueChangeFinished={if(duration>0)player?.seekTo((seek*duration).toLong())},colors=SliderDefaults.colors(thumbColor=accent,activeTrackColor=accent));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(timeLabel(player?.currentPosition?:0L),color=Grey,fontSize=11.sp);Text(timeLabel(duration),color=Grey,fontSize=11.sp)};Spacer(Modifier.height(14.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.CenterVertically){IconButton(onClick={shuffle=!shuffle}){Icon(Icons.Default.Shuffle,null,tint=if(shuffle)accent else Grey)};IconButton(onClick={player?.seekToPreviousMediaItem()}){Icon(Icons.Default.SkipPrevious,null,Modifier.size(34.dp))};FilledIconButton(onClick={if(playing)player?.pause()else player?.play()},modifier=Modifier.size(68.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=accent,contentColor=Black)){Icon(if(playing)Icons.Default.Pause else Icons.Default.PlayArrow,null,Modifier.size(38.dp))};IconButton(onClick={player?.seekToNextMediaItem()}){Icon(Icons.Default.SkipNext,null,Modifier.size(34.dp))};IconButton(onClick={repeat=(repeat+1)%3;player?.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}}){Icon(Icons.Default.Repeat,null,tint=if(repeat==0)Grey else accent)}};Spacer(Modifier.height(20.dp));Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(10.dp)){OutlinedButton(onClick={download(t)},modifier=Modifier.weight(1f)){Icon(Icons.Default.Download,null);Text(" Download")};OutlinedButton(onClick={showLyrics=true;lyrics=emptyList();scope.launch{lyricsBusy=true;lyrics=withContext(Dispatchers.IO){repo.lyrics(t)};lyricsBusy=false}},modifier=Modifier.weight(1f)){Icon(Icons.Default.Mic,null);Text(" Lyrics")}};if(visualizer)Row(Modifier.padding(top=24.dp),horizontalArrangement=Arrangement.Center,verticalAlignment=Alignment.CenterVertically){repeat(22){i->Box(Modifier.padding(horizontal=2.dp).width(3.dp).height((8+(i*13)%24).dp).clip(CircleShape).background(accent.copy(alpha=if(playing).9f else .35f)))}}} }}
 }
 
