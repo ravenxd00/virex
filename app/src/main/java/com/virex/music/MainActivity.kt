@@ -134,7 +134,7 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
   val index=q.indexOfFirst { it.id==t.id }.coerceAtLeast(0)
   c.setMediaItems(q.map { x ->
    val localFile=x.localPath?.let { File(it) }?.takeIf { it.exists() }
-   MediaItem.Builder().setMediaId(x.id).setUri(if(localFile!=null) android.net.Uri.fromFile(localFile) else x.streamUrl)
+   MediaItem.Builder().setMediaId(x.id).setUri(if(localFile!=null) "file://${localFile.absolutePath}" else x.streamUrl)
     .setMediaMetadata(MediaMetadata.Builder().setTitle(x.title).setArtist(x.artist).setArtworkUri(x.image.takeIf { it.startsWith("http") }?.let(android.net.Uri::parse)).build()).setTag(x).build()
   },index,0L)
   c.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}; c.prepare(); c.play()
@@ -193,7 +193,18 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
     Slider(value=seek.coerceIn(0f,1f),onValueChange={seek=it},onValueChangeFinished={if(duration>0)player?.seekTo((seek*duration).toLong())},modifier=Modifier.fillMaxWidth().height(25.dp),colors=SliderDefaults.colors(thumbColor=accent,activeTrackColor=accent,inactiveTrackColor=Color(0xFF333333)))
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(timeLabel(player?.currentPosition?:0L),color=Grey,fontSize=11.sp);Text(timeLabel(duration),color=Grey,fontSize=11.sp)}
     Spacer(Modifier.height(14.dp))
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){IconButton(onClick={shuffle=!shuffle},modifier=Modifier.size(44.dp)){Icon(Icons.Default.Shuffle,null,tint=if(shuffle)accent else Grey)};IconButton(onClick={player?.seekToPreviousMediaItem()},modifier=Modifier.size(48.dp)){Icon(Icons.Default.SkipPrevious,null,tint=Color.White,modifier=Modifier.size(35.dp))};FilledIconButton(onClick={if(playing)player?.pause()else if(t.streamUrl.isNotBlank()||t.localPath?.let{File(it).exists()}==true){if(player?.currentMediaItem==null)play(t,queue)else player?.play()}else message="Audio link unavailable for this track.",modifier=Modifier.size(76.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=accent,contentColor=Black)){Icon(if(playing)Icons.Default.Pause else Icons.Default.PlayArrow,null,Modifier.size(42.dp))};IconButton(onClick={player?.seekToNextMediaItem()},modifier=Modifier.size(48.dp)){Icon(Icons.Default.SkipNext,null,tint=Color.White,modifier=Modifier.size(35.dp))};IconButton(onClick={repeat=(repeat+1)%3;player?.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}},modifier=Modifier.size(44.dp)){Icon(Icons.Default.Repeat,null,tint=if(repeat==0)Grey else accent)}}
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){
+ IconButton(onClick={shuffle=!shuffle},modifier=Modifier.size(44.dp)){Icon(Icons.Default.Shuffle,null,tint=if(shuffle)accent else Grey)}
+ IconButton(onClick={player?.seekToPreviousMediaItem()},modifier=Modifier.size(48.dp)){Icon(Icons.Default.SkipPrevious,null,tint=Color.White,modifier=Modifier.size(35.dp))}
+ FilledIconButton(onClick={
+  if(playing) player?.pause()
+  else if(t.streamUrl.isNotBlank() || t.localPath?.let{File(it).exists()}==true){
+   if(player?.currentMediaItem==null) play(t,queue) else player?.play()
+  } else { message="Audio link unavailable for this track." }
+ },modifier=Modifier.size(76.dp),colors=IconButtonDefaults.filledIconButtonColors(containerColor=accent,contentColor=Black)){Icon(if(playing)Icons.Default.Pause else Icons.Default.PlayArrow,null,Modifier.size(42.dp))}
+ IconButton(onClick={player?.seekToNextMediaItem()},modifier=Modifier.size(48.dp)){Icon(Icons.Default.SkipNext,null,tint=Color.White,modifier=Modifier.size(35.dp))}
+ IconButton(onClick={repeat=(repeat+1)%3;player?.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}},modifier=Modifier.size(44.dp)){Icon(Icons.Default.Repeat,null,tint=if(repeat==0)Grey else accent)}
+}
     if(t.streamUrl.isBlank()&&t.localPath?.let{File(it).exists()}!=true){Text("Audio source unavailable for this track",color=Color(0xFFFFB4AB),fontSize=12.sp,modifier=Modifier.padding(top=8.dp))}
     Spacer(Modifier.height(20.dp))
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton(onClick={download(t)},modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(28.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF333333))){Icon(Icons.Default.Download,null,tint=accent);Text(" Download",color=Color.White,fontWeight=FontWeight.SemiBold)};OutlinedButton(onClick={showLyrics=true;lyrics=emptyList();scope.launch{lyricsBusy=true;lyrics=withContext(Dispatchers.IO){repo.lyrics(t)};lyricsBusy=false}},modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(28.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF333333))){Icon(Icons.Default.Mic,null,tint=accent);Text(" Lyrics",color=Color.White,fontWeight=FontWeight.SemiBold)};OutlinedButton(onClick={showQueue=true},modifier=Modifier.weight(1f).height(52.dp),shape=RoundedCornerShape(28.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Color(0xFF333333))){Icon(Icons.Default.QueueMusic,null,tint=accent);Text(" Queue",color=Color.White,fontWeight=FontWeight.SemiBold)}}
