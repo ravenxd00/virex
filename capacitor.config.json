@@ -1,0 +1,10 @@
+{
+  "appId": "com.virex.virexdl",
+  "appName": "VirexDL",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["*" ]
+  }
+}

@@ -225,6 +225,21 @@
                 <div id="search-results-area" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
             </div>
 
+            <!-- OFFLINE DOWNLOADS SECTION -->
+            <div id="section-downloads" class="hidden animate__animated animate__fadeIn mt-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div><h2 class="text-3xl font-bold">Downloads</h2><p class="text-xs text-gray-500 mt-1">Saved on this device · works offline</p></div>
+                    <button onclick="clearOfflineSongs()" class="text-xs text-gray-400 hover:text-red-400 px-3 py-2 rounded-full bg-white/5"><i class="fas fa-trash-alt mr-1"></i> Clear all</button>
+                </div>
+                <p id="offline-summary" class="text-xs text-gray-500 mb-5">Loading saved songs…</p>
+                <div id="offline-songs-list" class="flex flex-col gap-2"></div>
+                <div id="offline-empty" class="hidden flex-col items-center justify-center py-20 text-gray-500">
+                    <i class="fas fa-cloud-download-alt text-5xl mb-4 opacity-30"></i>
+                    <p class="font-bold text-white mb-1">No offline songs yet</p>
+                    <p class="text-sm text-center max-w-xs">While online, use a song’s download option to save it here for listening without internet.</p>
+                </div>
+            </div>
+
             <!-- PLAYLISTS SECTION -->
             <div id="section-playlists" class="hidden animate__animated animate__fadeIn mt-4">
                 <div class="flex justify-between items-center mb-6">
@@ -357,6 +372,9 @@
             </button>
             <button onclick="switchTab('playlists')" class="nav-item flex flex-col items-center gap-1 text-gray-500 transition-all w-full h-full justify-center" id="nav-playlists">
                 <i class="fas fa-layer-group text-xl mb-0.5"></i><span class="text-[10px] font-medium">Playlists</span>
+            </button>
+            <button onclick="switchTab('downloads')" class="nav-item flex flex-col items-center gap-1 text-gray-500 transition-all w-full h-full justify-center" id="nav-downloads">
+                <i class="fas fa-download text-xl mb-0.5"></i><span class="text-[10px] font-medium">Downloads</span>
             </button>
         </div>
     </nav>
@@ -939,7 +957,7 @@
         function switchTab(tab) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             if(document.getElementById('nav-' + tab)) document.getElementById('nav-' + tab).classList.add('active');
-            ['home', 'search', 'playlists', 'single-playlist', 'about', 'guide'].forEach(s => document.getElementById('section-' + s).classList.add('hidden'));
+            ['home', 'search', 'playlists', 'downloads', 'single-playlist', 'about', 'guide'].forEach(s => document.getElementById('section-' + s).classList.add('hidden'));
             
             if(tab === 'playlists') {
                 document.getElementById('section-playlists').classList.remove('hidden');
@@ -947,6 +965,9 @@
             } else if(tab === 'search') {
                 document.getElementById('section-search').classList.remove('hidden');
                 renderSearchHistory();
+            } else if(tab === 'downloads') {
+                document.getElementById('section-downloads').classList.remove('hidden');
+                renderOfflineSongs();
             } else {
                 document.getElementById('section-' + tab).classList.remove('hidden');
             }
@@ -1888,45 +1909,90 @@
         function updateSrc(id, s) { document.getElementById(id).src = s; }
         function formatTime(s) { const m = Math.floor(s/60); const sc = Math.floor(s%60); return `${m}:${sc<10?'0':''}${sc}`; }
         
-        // --- FAST & RELIABLE BLOB DOWNLOAD (NO CORS METADATA FALLBACKS) ---
+        // --- DEVICE OFFLINE LIBRARY (IndexedDB) ---
+        const OFFLINE_DB_NAME = 'virexdl-offline-v1';
+        function openOfflineDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+                req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('songs')) req.result.createObjectStore('songs', { keyPath: 'id' }); };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error || new Error('Offline storage unavailable'));
+            });
+        }
+        async function offlineGetAll() {
+            const db = await openOfflineDB();
+            return new Promise((resolve, reject) => { const r = db.transaction('songs','readonly').objectStore('songs').getAll(); r.onsuccess=()=>resolve(r.result||[]); r.onerror=()=>reject(r.error); });
+        }
+        async function offlinePut(song) {
+            const db = await openOfflineDB();
+            return new Promise((resolve, reject) => { const tx=db.transaction('songs','readwrite'); tx.objectStore('songs').put(song); tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error); });
+        }
+        async function offlineDelete(id) {
+            const db = await openOfflineDB();
+            return new Promise((resolve, reject) => { const tx=db.transaction('songs','readwrite'); tx.objectStore('songs').delete(id); tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error); });
+        }
         async function downloadSongRobust(track) {
-            let title = decodeEntities(track.name);
+            if (!track) { showToast('No song selected'); return; }
+            let title = decodeEntities(track.name || 'Unknown song');
             let artist = decodeEntities(track.artists?.primary?.[0]?.name || 'Unknown Artist');
-            
-            // Clean illegal characters to ensure Android file system accepts it
             title = title.replace(/[<>:"/\\|?*]+/g, '').trim();
             artist = artist.replace(/[<>:"/\\|?*]+/g, '').trim();
-            
-            showToast(`Downloading: ${title}...`);
-            
+            showToast(`Saving offline: ${title}…`);
             try {
-                let downloadObj = config.hq ? (track.downloadUrl.find(u => u.quality === "320kbps") || track.downloadUrl[0]) : (track.downloadUrl.find(u => u.quality === "160kbps") || track.downloadUrl[track.downloadUrl.length-1]);
-                const url = downloadObj.url;
-
-                // Dynamically assign correct extension
-                const ext = url.includes('.mp3') ? '.mp3' : '.m4a';
-                const filename = `${title} - ${artist}${ext}`;
-
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Network response was not ok");
-                
+                const urls = Array.isArray(track.downloadUrl) ? track.downloadUrl : [];
+                const downloadObj = config.hq ? (urls.find(u => u.quality === '320kbps') || urls[0]) : (urls.find(u => u.quality === '160kbps') || urls[urls.length-1]);
+                if (!downloadObj?.url) throw new Error('No downloadable audio URL');
+                const res = await fetch(downloadObj.url);
+                if (!res.ok) throw new Error('Download request failed');
                 const blob = await res.blob();
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-                
-                showToast("Download Complete!");
+                if (!blob.size) throw new Error('Empty audio file');
+                const id = String(track.id || `${title}-${artist}`).replace(/[^a-zA-Z0-9_-]/g,'_');
+                const img = Array.isArray(track.image) ? (track.image.at(-1)?.url || '') : (track.image || '');
+                await offlinePut({ id, title, artist, image: img, blob, mime: blob.type || 'audio/mpeg', size: blob.size, savedAt: Date.now() });
+                showToast('Saved for offline listening!');
                 vibrate(20);
+                if (!document.getElementById('section-downloads').classList.contains('hidden')) renderOfflineSongs();
             } catch (e) {
-                console.error("Download failed:", e);
-                showToast("Download Failed! Check network.");
+                console.error('Offline save failed:', e);
+                showToast(navigator.onLine ? 'Could not save this song' : 'Connect to internet to save songs');
             }
         }
-        
+        function formatBytes(bytes) { if (!bytes) return '0 B'; const units=['B','KB','MB','GB']; const i=Math.min(Math.floor(Math.log(bytes)/Math.log(1024)),3); return `${(bytes/Math.pow(1024,i)).toFixed(i?1:0)} ${units[i]}`; }
+        async function renderOfflineSongs() {
+            const list=document.getElementById('offline-songs-list'), empty=document.getElementById('offline-empty'), summary=document.getElementById('offline-summary');
+            try {
+                const songs=await offlineGetAll();
+                summary.textContent=`${songs.length} song${songs.length===1?'':'s'} · ${formatBytes(songs.reduce((n,s)=>n+(s.size||0),0))} stored on this device`;
+                list.innerHTML=''; empty.classList.toggle('hidden', songs.length>0); empty.classList.toggle('flex', songs.length===0);
+                songs.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)).forEach(song=>{
+                    const row=document.createElement('div'); row.className='flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5';
+                    const art=document.createElement('img'); art.className='w-12 h-12 rounded-lg object-cover bg-white/10'; art.alt=''; art.src=song.image||'logo.png';
+                    const meta=document.createElement('div'); meta.className='flex-1 min-w-0';
+                    const name=document.createElement('p'); name.className='font-semibold text-sm truncate'; name.textContent=song.title;
+                    const sub=document.createElement('p'); sub.className='text-xs text-gray-500 truncate'; sub.textContent=`${song.artist} · ${formatBytes(song.size)}`;
+                    meta.append(name,sub);
+                    const play=document.createElement('button'); play.className='w-10 h-10 rounded-full bg-white/10 text-white'; play.innerHTML='<i class="fas fa-play"></i>'; play.title='Play offline'; play.onclick=()=>playOfflineSong(song.id);
+                    const del=document.createElement('button'); del.className='w-9 h-9 text-gray-500 hover:text-red-400'; del.innerHTML='<i class="fas fa-trash"></i>'; del.title='Remove download'; del.onclick=async()=>{await offlineDelete(song.id); renderOfflineSongs(); showToast('Removed offline song');};
+                    row.append(art,meta,play,del); list.appendChild(row);
+                });
+            } catch(e) { console.error(e); summary.textContent='Offline storage is unavailable in this browser.'; }
+        }
+        async function playOfflineSong(id) {
+            try {
+                const song=(await offlineGetAll()).find(s=>s.id===id); if(!song) return;
+                if(window._virexOfflineUrl) URL.revokeObjectURL(window._virexOfflineUrl);
+                window._virexOfflineUrl=URL.createObjectURL(song.blob);
+                const track={ id:song.id, name:song.title, artists:{primary:[{name:song.artist}]}, image:song.image, downloadUrl:[{quality:'offline',url:window._virexOfflineUrl}] };
+                originalQueue=[track]; currentQueue=[track]; currentIndex=0; loadTrack(); openFullPlayer(); showToast('Playing saved song offline');
+            } catch(e) { console.error(e); showToast('Could not play this offline song'); }
+        }
+        async function clearOfflineSongs() {
+            if (!confirm('Delete all saved offline songs from this device?')) return;
+            const db=await openOfflineDB();
+            await new Promise((resolve,reject)=>{const tx=db.transaction('songs','readwrite');tx.objectStore('songs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});
+            renderOfflineSongs(); showToast('Offline downloads cleared');
+        }
+
         function downloadCurrentSong() { downloadSongRobust(currentQueue[currentIndex]); }
         function ctxDownload() { closeContextMenu(); downloadSongRobust(ctxSong); }
 
