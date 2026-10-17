@@ -10,8 +10,8 @@
     <application
         android:allowBackup="false"
         android:label="Virex"
-        android:icon="@drawable/ic_virex"
-        android:roundIcon="@drawable/ic_virex"
+        android:icon="@drawable/virex_logo"
+        android:roundIcon="@drawable/virex_logo"
         android:theme="@style/Theme.Virex"
         android:usesCleartextTraffic="false"
         android:supportsRtl="true">
