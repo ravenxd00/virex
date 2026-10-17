@@ -105,7 +105,7 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
  var lyrics by remember { mutableStateOf(emptyList<String>()) }; var lyricsBusy by remember { mutableStateOf(false) }
  var splashVisible by remember { mutableStateOf(true) }
  val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if(!granted) message="Playback notification permission was denied. You can enable it in Android Settings." }
- LaunchedEffect(Unit) { delay(1500); splashVisible=false; if(Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) { delay(350); notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } }
+ LaunchedEffect(Unit) { delay(1500); splashVisible=false; if(Build.VERSION.SDK_INT>=33 && ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED && !prefs.getBoolean("notification_prompted",false)) { delay(350); prefs.edit().putBoolean("notification_prompted",true).apply(); notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } }
 
  LaunchedEffect(future) { runCatching { future?.get() }.onSuccess { player=it }.onFailure { message="Player unavailable. Please restart the app." } }
  DisposableEffect(player) { val c=player; val l=object: Player.Listener { override fun onIsPlayingChanged(v:Boolean){playing=v}; override fun onMediaItemTransition(item:MediaItem?,reason:Int){current=c?.currentMediaItem?.localConfiguration?.tag as? Track} }; c?.addListener(l); onDispose { c?.removeListener(l) } }
