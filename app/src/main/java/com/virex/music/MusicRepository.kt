@@ -92,4 +92,41 @@ class MusicRepository {
             }
         }
     }
+
+    suspend fun lyrics(track: Track): List<String> = withContext(Dispatchers.IO) {
+        val name = java.net.URLEncoder.encode(track.title.substringBefore("(").trim(), "UTF-8")
+        val artist = java.net.URLEncoder.encode(track.artist, "UTF-8")
+        val request = Request.Builder().url("https://lrclib.net/api/get?track_name=$name&artist_name=$artist").build()
+        val response = client.newCall(request).execute()
+        response.use {
+            if (!it.isSuccessful) {
+                val searchRequest = Request.Builder().url("https://lrclib.net/api/search?track_name=$name&artist_name=$artist").build()
+                client.newCall(searchRequest).execute().use { searchResponse ->
+                    if (!searchResponse.isSuccessful) return@withContext listOf("Lyrics unavailable for this track.")
+                    val arr = JSONArray(searchResponse.body?.string().orEmpty())
+                    if (arr.length() == 0) return@withContext listOf("No lyrics found.")
+                    val obj = arr.optJSONObject(0) ?: return@withContext listOf("No lyrics found.")
+                    return@withContext parseLyrics(obj.optString("syncedLyrics").ifBlank { obj.optString("plainLyrics") })
+                }
+            }
+            val obj = JSONObject(it.body?.string().orEmpty())
+            if (obj.optBoolean("instrumental")) return@withContext listOf("Instrumental")
+            parseLyrics(obj.optString("syncedLyrics").ifBlank { obj.optString("plainLyrics") })
+        }
+    }
+
+    private fun parseLyrics(raw: String): List<String> {
+        if (raw.isBlank() || raw == "null") return listOf("No lyrics found.")
+        val timed = Regex("\\[(\\d{2}):(\\d{2})[.](\\d{2,3})](.*)")
+        val parsed = raw.lines().mapNotNull { line ->
+            val m = timed.find(line)
+            if (m != null) {
+                val millis = m.groupValues[1].toInt() * 60000 + m.groupValues[2].toInt() * 1000
+                val fraction = m.groupValues[3].padEnd(3, '0').take(3).toInt()
+                Pair(millis + fraction, m.groupValues[4].trim())
+            } else null
+        }.sortedBy { it.first }.map { it.second }.filter { it.isNotBlank() }
+        return if (parsed.isNotEmpty()) parsed else raw.lines().map { it.trim() }.filter { it.isNotBlank() }
+    }
+
 }
