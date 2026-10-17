@@ -14,6 +14,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -185,7 +186,7 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
    Column(Modifier.fillMaxSize().background(Black).windowInsetsPadding(WindowInsets.statusBars).windowInsetsPadding(WindowInsets.navigationBars).padding(horizontal=24.dp),horizontalAlignment=Alignment.CenterHorizontally){
     Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick={showPlayer=false}){Icon(Icons.Default.KeyboardArrowDown,null,tint=Color.White,modifier=Modifier.size(30.dp))};Spacer(Modifier.weight(1f));Column(horizontalAlignment=Alignment.CenterHorizontally){Text("NOW PLAYING",fontSize=10.sp,letterSpacing=2.sp,color=Grey,fontWeight=FontWeight.Bold);Text("Virex Radio",fontSize=12.sp,color=accent,fontWeight=FontWeight.SemiBold)};Spacer(Modifier.weight(1f));IconButton(onClick={showQueue=true}){Icon(Icons.Default.QueueMusic,null,tint=Color.White)}}
     Spacer(Modifier.weight(.5f))
-    AsyncImage(model=t.image,contentDescription=null,modifier=Modifier.fillMaxWidth(.82f).aspectRatio(1f).clip(RoundedCornerShape(18.dp)))
+    AsyncImage(model=t.image,contentDescription=null,modifier=Modifier.fillMaxWidth(.82f).aspectRatio(1f).clip(RoundedCornerShape(18.dp)).pointerInput(t.id){var dx=0f;var dy=0f;detectDragGestures(onDrag={change,amount->dx+=amount.x;dy+=amount.y},onDragEnd={if(dy>60f)showPlayer=false else if(dx < -60f)player?.seekToNextMediaItem() else if(dx>60f)player?.seekToPreviousMediaItem();dx=0f;dy=0f})})
     Spacer(Modifier.height(24.dp))
     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(t.title,fontSize=25.sp,fontWeight=FontWeight.Bold,color=Color.White,maxLines=1,overflow=TextOverflow.Ellipsis);Text(t.artist,fontSize=17.sp,color=Grey,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=3.dp))};IconButton(onClick={if(playlists.isEmpty())playlists=listOf(NativePlaylist(System.currentTimeMillis(),"My Playlist",listOf(t))) else {val p=playlists.first();playlists=playlists.map{if(it.id==p.id)p.copy(songs=(p.songs+t).distinctBy{z->z.id})else it}};savePlaylists();message="Added to playlist"}){Icon(Icons.Default.AddCircle,null,tint=accent,modifier=Modifier.size(27.dp))}}
     Spacer(Modifier.height(18.dp))
