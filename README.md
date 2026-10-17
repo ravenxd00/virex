@@ -1,13 +1,22 @@
-# VirexDL Android project
+# Virex Native Android
 
-## Build
-Push to `main` or run the GitHub Actions workflow manually. Download the `VirexDL-debug-apk` artifact after a successful build.
+Virex is being rebuilt as a **native Android application** using Kotlin, Jetpack Compose, and AndroidX Media3. This is not a WebView wrapper or a PWA.
 
-## Cross-device work
-- Uses viewport and safe-area rules intended for compact phones, tall phones, tablets, and desktop WebViews.
-- Keeps zoom available for accessibility and has a `100vh` fallback for WebViews without `100dvh` support.
-- Includes Capacitor Haptics, Status Bar and Splash Screen dependencies/configuration.
-- Backup & Restore UI was removed from Settings.
+## Build an installable debug APK
 
-## Device testing still required
-Test on multiple screen sizes and Android versions. WebView Media Session behavior and OnePlus live-status UI vary by device; guaranteed background playback/notification controls can require native media-session and foreground-service implementation.
+1. Open **Actions** in this repository.
+2. Select **Build Virex Native Android APK** and run the workflow on branch `native-android` (or wait for the branch push build).
+3. Open the completed run and download the `Virex-Native-debug-apk` artifact.
+4. Extract the artifact ZIP and install `app-debug.apk` on your Android device. Android may ask you to allow installation from that source.
+
+## Included in the native app
+
+- Native Compose interface with Virex black-and-lime branding.
+- Search against the JioSaavn-compatible API used by the existing site.
+- AndroidX Media3 ExoPlayer and MediaSessionService for background playback and media notification integration.
+- Download songs to app-private storage and play downloaded files from the offline library.
+- Album artwork, playback controls, and basic search/download status.
+
+## Important testing notes
+
+This is a debug build until it has been compiled and tested on physical devices. The external music API and audio URLs can change or be unavailable. Background playback, notifications, downloads, and offline playback must be tested on the target Android version before calling the app release-ready. The original website remains on the default branch; native changes are isolated on `native-android`.
