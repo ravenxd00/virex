@@ -92,7 +92,7 @@ class MusicRepository {
             response.body?.byteStream()?.use { input -> target.outputStream().use { output -> input.copyTo(output) } }
                 ?: error("Empty audio response")
             val local = track.copy(localPath = target.absolutePath)
-            val saved = context.getSharedPreferences("virex", Context.MODE_PRIVATE)
+            val saved = context.getSharedPreferences("virex_native", Context.MODE_PRIVATE)
             val previous = saved.getString("downloads", "[]") ?: "[]"
             val array = org.json.JSONArray(previous)
             var found = false
@@ -108,7 +108,7 @@ class MusicRepository {
     }
 
     fun getDownloads(context: Context): List<Track> {
-        val array = org.json.JSONArray(context.getSharedPreferences("virex", Context.MODE_PRIVATE).getString("downloads", "[]"))
+        val array = org.json.JSONArray(context.getSharedPreferences("virex_native", Context.MODE_PRIVATE).getString("downloads", "[]"))
         return buildList {
             for (i in 0 until array.length()) {
                 val o = array.optJSONObject(i) ?: continue
