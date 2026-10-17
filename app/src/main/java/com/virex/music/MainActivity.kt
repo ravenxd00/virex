@@ -123,7 +123,19 @@ private fun VirexNative(context: Context, future: ListenableFuture<MediaControll
  }
  DisposableEffect(player) { val c=player; val l=object: Player.Listener { override fun onIsPlayingChanged(v:Boolean){playing=v}; override fun onMediaItemTransition(item:MediaItem?,reason:Int){current=c?.currentMediaItem?.localConfiguration?.tag as? Track} }; c?.addListener(l); onDispose { c?.removeListener(l) } }
  fun savePlaylists() { val a=JSONArray(); playlists.forEach { p -> val s=JSONArray(); p.songs.forEach { s.put(trackJson(it)) }; a.put(JSONObject().put("id",p.id).put("name",p.name).put("songs",s)) }; prefs.edit().putString("playlists",a.toString()).apply() }
- fun play(t:Track,list:List<Track>) { if(t.streamUrl.isBlank() && (t.localPath==null || !File(t.localPath).exists())) { message="This result has no playable audio URL."; return }; val c=player ?: run { message="Player is starting. Try again."; return }; val q=list.ifEmpty { listOf(t) }; queue=q; val index=q.indexOfFirst { it.id==t.id }.coerceAtLeast(0); c.setMediaItems(q.map { x -> MediaItem.Builder().setMediaId(x.id).setUri(if(x.localPath!=null && File(x.localPath).exists()) "file://"+x.localPath else x.streamUrl).setMediaMetadata(MediaMetadata.Builder().setTitle(x.title).setArtist(x.artist).setArtworkUri(x.image.takeIf { it.startsWith("http") }?.let(android.net.Uri::parse)).build()).setTag(x).build() },index,0L); current=t; c.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}; c.prepare(); c.play(); showPlayer=true }
+ fun play(t:Track,list:List<Track>) {
+  val q=list.ifEmpty { listOf(t) }; queue=q; current=t; showPlayer=true
+  val local=t.localPath?.let { File(it) }?.takeIf { it.exists() }
+  if(t.streamUrl.isBlank() && local==null) { message="Audio link unavailable for this track."; return }
+  val c=player ?: run { message="Player is connecting. The player screen is open; try Play again in a moment."; return }
+  val index=q.indexOfFirst { it.id==t.id }.coerceAtLeast(0)
+  c.setMediaItems(q.map { x ->
+   val localFile=x.localPath?.let { File(it) }?.takeIf { it.exists() }
+   MediaItem.Builder().setMediaId(x.id).setUri(if(localFile!=null) android.net.Uri.fromFile(localFile) else x.streamUrl)
+    .setMediaMetadata(MediaMetadata.Builder().setTitle(x.title).setArtist(x.artist).setArtworkUri(x.image.takeIf { it.startsWith("http") }?.let(android.net.Uri::parse)).build()).setTag(x).build()
+  },index,0L)
+  c.repeatMode=when(repeat){1->Player.REPEAT_MODE_ALL;2->Player.REPEAT_MODE_ONE;else->Player.REPEAT_MODE_OFF}; c.prepare(); c.play()
+ }
  fun search(q:String) { if(q.isBlank()||busy)return; query=q; history=(listOf(q)+history.filterNot{it.equals(q,true)}).take(8); prefs.edit().putString("history",history.joinToString("\n")).apply(); tab="Search"; scope.launch { busy=true; message="Searching…"; try { results=withContext(Dispatchers.IO){repo.search(q,hq)}; message=results.size.toString()+" results" } catch(e:Exception){message=e.message?:"Search failed"} finally{busy=false} } }
  fun loadCategory(cat:String) { category=cat; scope.launch { busy=true; message="Loading "+cat+" mix…"; try { home=withContext(Dispatchers.IO){val mixed=(CategoryQueries[cat]?:CategoryQueries["Trending"]!!).shuffled().take(3).flatMap{runCatching { repo.search(it,hq).take(15) }.getOrDefault(emptyList())}.shuffled();val counts=mutableMapOf<String,Int>();mixed.filter{t->val a=t.artist.ifBlank{"Unknown"};val n=counts[a]?:0;if(n>=2)false else{counts[a]=n+1;true}}.distinctBy{it.id}.take(24)}; message=cat+" Mix" } catch(e:Exception){message=e.message?:"Could not load songs"} finally{busy=false} } }
  fun download(t:Track) { if(t.streamUrl.isBlank()) { message="This result has no downloadable audio URL."; return }; scope.launch { downloading=t.id; try { repo.download(context,t); downloads=repo.getDownloads(context); message="Saved for offline listening" } catch(e:Exception){message=e.message?:"Download failed"} finally{downloading=""} } }
