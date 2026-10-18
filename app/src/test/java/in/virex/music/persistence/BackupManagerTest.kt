@@ -1,6 +1,6 @@
-package in.virex.music.persistence
+package com.virex.music.persistence
 
-import in.virex.music.domain.model.Playlist
+import com.virex.music.domain.model.Playlist
 import org.junit.Assert.*
 import org.junit.Test
 

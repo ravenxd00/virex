@@ -1,4 +1,4 @@
-package in.virex.music.data.remote
+package com.virex.music.data.remote
 
 import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
