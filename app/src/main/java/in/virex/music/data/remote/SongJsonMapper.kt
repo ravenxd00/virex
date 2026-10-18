@@ -15,9 +15,7 @@ object SongJsonMapper {
     val id = song.string("id", "songId", "trackId", "perma_url")
     if (id.isBlank()) return@runCatching null
     val title = song.string("name", "title", "song", "trackName").decodeHtml().ifBlank { "Unknown title" }
-    val artists = song.string("primaryArtists", "primary_artists", "artist", "singers", "subtitle")
-     .ifBlank { song.objectAt("artists")?.string("primary", "name", "artist").orEmpty() }
-     .decodeHtml().ifBlank { "Unknown artist" }
+    val artists = artistName(song).decodeHtml().ifBlank { "Unknown artist" }
     val album = song.objectAt("album")?.string("name", "title").orEmpty()
     val image = bestImage(song)
     val audio = bestAudio(song, highQuality)
@@ -40,6 +38,31 @@ object SongJsonMapper {
    return null
   }
   return find(root, 0)
+ }
+ private fun artistName(song: JsonObject): String {
+  val direct = song.string("primaryArtists", "primary_artists", "artist", "singers", "artistName", "artist_name")
+  if (direct.isNotBlank()) return direct
+  fun names(element: JsonElement?): String {
+   if (element == null || element.isJsonNull) return ""
+   if (element.isJsonPrimitive) return element.asString
+   if (element.isJsonArray) return element.asJsonArray.mapNotNull { names(it).takeIf(String::isNotBlank) }.distinct().joinToString(", ")
+   if (element.isJsonObject) {
+    val obj = element.asJsonObject
+    val named = obj.string("name", "title", "artistName", "artist_name")
+    if (named.isNotBlank()) return named
+    for (key in listOf("primary", "primary_artists", "artists", "all", "featured", "list")) {
+     val nested = names(obj.get(key))
+     if (nested.isNotBlank()) return nested
+    }
+   }
+   return ""
+  }
+  for (key in listOf("primaryArtists", "primary_artists", "artists", "artist", "singers", "artistMap", "artist_map")) {
+   val value = names(song.get(key))
+   if (value.isNotBlank()) return value
+  }
+  val subtitle = song.string("subtitle")
+  return subtitle.takeIf { it.isNotBlank() }.orEmpty()
  }
  private fun bestImage(song: JsonObject): String {
   val image = song.get("image") ?: song.get("images") ?: song.get("artwork") ?: song.get("album")?.takeIf { it.isJsonObject }?.asJsonObject?.get("image")
