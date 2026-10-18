@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import in.virex.music.VirexApplication
 import in.virex.music.domain.model.Playlist
 import in.virex.music.domain.model.Track
+import in.virex.music.downloads.DownloadScheduler
 import in.virex.music.persistence.AppSettings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -88,12 +89,10 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
   }
  }
  fun download(track: Track) {
-  if (_ui.value.downloadingId != null) return
-  viewModelScope.launch {
-   _ui.value = _ui.value.copy(downloadingId = track.id, error = null)
-   val result = app.repository.download(track, _ui.value.settings.highQuality)
-   _ui.value = _ui.value.copy(downloadingId = null, error = result.exceptionOrNull()?.message ?: if (result.isSuccess) "Saved for offline listening" else "Download failed")
-  }
+  if (track.streamUrl.isBlank()) { _ui.value = _ui.value.copy(error = "This track has no usable audio URL to download."); return }
+  runCatching { DownloadScheduler.enqueue(getApplication(), track, _ui.value.settings.highQuality) }
+   .onSuccess { _ui.value = _ui.value.copy(error = "Download queued. It will appear here when complete.") }
+   .onFailure { _ui.value = _ui.value.copy(error = it.message ?: "Could not queue download.") }
  }
  fun updateSettings(transform: (AppSettings) -> AppSettings) { viewModelScope.launch { app.settings.update(transform) } }
  fun trackById(id: String): Track? = _ui.value.downloads.firstOrNull { it.id == id } ?: _ui.value.home.firstOrNull { it.id == id } ?: _ui.value.results.firstOrNull { it.id == id }
