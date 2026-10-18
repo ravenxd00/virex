@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -325,7 +326,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
     "Lyrics" -> LyricsPanel(track, state.positionMs, onShare)
     else -> {
      Spacer(Modifier.weight(.5f))
-     AsyncImage(track.artworkUrl.ifBlank { null }, null, Modifier.fillMaxWidth(.86f).aspectRatio(1f).clip(RoundedCornerShape(20.dp)).align(Alignment.CenterHorizontally).background(VirexCard))
+     AsyncImage(track.artworkUrl.takeIf { it.isNotBlank() }, null, Modifier.fillMaxWidth(.86f).aspectRatio(1f).clip(RoundedCornerShape(20.dp)).align(Alignment.CenterHorizontally).background(VirexCard).pointerInput(track.id) { var dx = 0f; var dy = 0f; detectDragGestures(onDrag = { _, amount -> dx += amount.x; dy += amount.y }, onDragEnd = { if (dy > 65f) onClose() else if (dx < -65f) onNext() else if (dx > 65f) onPrevious(); dx = 0f; dy = 0f }) })
      Spacer(Modifier.height(24.dp))
      Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(track.title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(track.artist, color = VirexMuted, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis) }; IconButton(onClick = { onAdd(track) }) { Icon(Icons.Default.Add, "Add to playlist", tint = accent) } }
      Slider(value = if (state.durationMs > 0) state.positionMs.toFloat().div(state.durationMs).coerceIn(0f,1f) else seek, onValueChange = { seek = it }, onValueChangeFinished = { onSeek((seek * state.durationMs).toLong()) }, colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent, inactiveTrackColor = Color(0xFF333333)))
