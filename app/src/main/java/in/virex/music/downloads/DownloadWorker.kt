@@ -27,7 +27,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
   return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) else ForegroundInfo(NOTIFICATION_ID, notification)
  }
  override suspend fun doWork(): Result {
-  setForeground(getForegroundInfo())
   val id = inputData.getString(KEY_ID).orEmpty()
   val url = inputData.getString(KEY_URL).orEmpty()
   if (id.isBlank() || !url.startsWith("https://")) return Result.failure()
@@ -41,6 +40,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
    streamUrl = url
   )
   return try {
+   setForeground(getForegroundInfo())
    val app = applicationContext as VirexApplication
    setProgress(workDataOf("state" to "Downloading", "percent" to 0))
    app.repository.download(track, inputData.getBoolean(KEY_HIGH_QUALITY, false)).getOrThrow()
