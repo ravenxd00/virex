@@ -357,7 +357,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  LaunchedEffect(track.id) { val r = app.repository.lyrics(track); lines = r.getOrNull()?.lines.orEmpty(); error = r.exceptionOrNull()?.message ?: if (lines.isEmpty()) "Lyrics are unavailable for this track." else null; busy = false }
  LaunchedEffect(activeIndex) { if (activeIndex >= 0 && lines.isNotEmpty()) listState.animateScrollToItem(activeIndex.coerceIn(0, lines.lastIndex)) }
  Column(Modifier.fillMaxSize().padding(top = 18.dp)) {
-  Row(verticalAlignment = Alignment.CenterVertically) { Text("Lyrics", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton(onClick = { if (lines.isNotEmpty()) clipboard.setText(androidx.compose.ui.text.AnnotatedString(lines.joinToString("\\n") { it.text })) }, enabled = lines.isNotEmpty()) { Text("Copy", color = VirexGreen) }; TextButton(onClick = { onShare(track) }) { Text("Share", color = VirexGreen) } }
+  Row(verticalAlignment = Alignment.CenterVertically) { Text("Lyrics", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton(onClick = { if (lines.isNotEmpty()) clipboard.setText(androidx.compose.ui.text.AnnotatedString(lines.joinToString("\n") { it.text })) }, enabled = lines.isNotEmpty()) { Text("Copy", color = VirexGreen) }; TextButton(onClick = { onShare(track) }) { Text("Share", color = VirexGreen) } }
   when {
    busy -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = VirexGreen) }
    lines.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(error ?: "Instrumental or unavailable", color = VirexMuted) }
