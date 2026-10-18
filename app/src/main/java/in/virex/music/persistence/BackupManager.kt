@@ -1,8 +1,8 @@
-package in.virex.music.persistence
+package com.virex.music.persistence
 
 import com.google.gson.Gson
 import com.google.gson.JsonParser
-import in.virex.music.domain.model.Playlist
+import com.virex.music.domain.model.Playlist
 
 data class BackupDocument(
  val schemaVersion: Int = 1,

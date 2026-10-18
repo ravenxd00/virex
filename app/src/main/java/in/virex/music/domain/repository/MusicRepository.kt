@@ -1,8 +1,8 @@
-package in.virex.music.domain.repository
+package com.virex.music.domain.repository
 
-import in.virex.music.domain.model.Playlist
-import in.virex.music.domain.model.SongLyrics
-import in.virex.music.domain.model.Track
+import com.virex.music.domain.model.Playlist
+import com.virex.music.domain.model.SongLyrics
+import com.virex.music.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 interface MusicRepository {

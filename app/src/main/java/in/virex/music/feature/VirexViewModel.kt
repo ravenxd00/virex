@@ -1,14 +1,14 @@
-package in.virex.music.feature
+package com.virex.music.feature
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import in.virex.music.VirexApplication
-import in.virex.music.domain.model.Playlist
-import in.virex.music.domain.model.PlaylistImportPolicy
-import in.virex.music.domain.model.Track
-import in.virex.music.downloads.DownloadScheduler
-import in.virex.music.persistence.AppSettings
+import com.virex.music.VirexApplication
+import com.virex.music.domain.model.Playlist
+import com.virex.music.domain.model.PlaylistImportPolicy
+import com.virex.music.domain.model.Track
+import com.virex.music.downloads.DownloadScheduler
+import com.virex.music.persistence.AppSettings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

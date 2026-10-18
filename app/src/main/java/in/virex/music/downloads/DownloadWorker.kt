@@ -1,4 +1,4 @@
-package in.virex.music.downloads
+package com.virex.music.downloads
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,9 +9,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import in.virex.music.R
-import in.virex.music.VirexApplication
-import in.virex.music.domain.model.Track
+import com.virex.music.R
+import com.virex.music.VirexApplication
+import com.virex.music.domain.model.Track
 
 class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
  override suspend fun getForegroundInfo(): ForegroundInfo {

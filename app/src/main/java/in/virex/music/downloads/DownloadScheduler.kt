@@ -1,4 +1,4 @@
-package in.virex.music.downloads
+package com.virex.music.downloads
 
 import android.content.Context
 import androidx.work.BackoffPolicy
@@ -8,7 +8,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
-import in.virex.music.domain.model.Track
+import com.virex.music.domain.model.Track
 import java.util.concurrent.TimeUnit
 
 object DownloadScheduler {
