@@ -166,22 +166,22 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    NavHost(navController = nav, startDestination = "home", modifier = Modifier.fillMaxSize()) {
     composable("home") {
      HomeScreen(ui, { vm.loadCategory(it) }, vm::refreshCategory, { track ->
-      selectedTrack = track; val queue = QueuePolicy.distinctQueue(track, ui.home)
-      app.playerController.play(track, queue, PlaybackContext.RADIO); playerOpen = true
+      selectedTrack = track; playerOpen = true; val queue = QueuePolicy.distinctQueue(track, ui.home)
+      app.playerController.play(track, queue, PlaybackContext.RADIO)
       scope.launch { app.repository.suggestions(track, ui.settings.highQuality).getOrNull()?.let { app.playerController.append(it) } }
      }, { addToPlaylistTrack = it }, { vm.download(it); snackbar = "Download queued" }, { selectedTrack = it; showTrackActions = true }, { showSettings = true }, { snackbar = it })
     }
     composable("search") {
-     SearchScreen(ui, vm, { track -> app.playerController.play(track, ui.results, PlaybackContext.SEARCH); playerOpen = true }, { addToPlaylistTrack = it }, { selectedTrack = it; showTrackActions = true })
+     SearchScreen(ui, vm, { track -> selectedTrack = track; playerOpen = true; app.playerController.play(track, ui.results, PlaybackContext.SEARCH) }, { addToPlaylistTrack = it }, { selectedTrack = it; showTrackActions = true })
     }
     composable("playlists") {
      PlaylistsScreen(ui.playlists, vm, { createPlaylist = true }, { importPlaylist = true }, { playlistDetail = it })
     }
     composable("downloads") {
-     DownloadsScreen(ui.downloads, { track -> app.playerController.play(track, ui.downloads, PlaybackContext.DOWNLOADS); playerOpen = true }, { snackbar = it }, { vm.clearDownloads(); snackbar = "Downloads cleared" })
+     DownloadsScreen(ui.downloads, { track -> selectedTrack = track; playerOpen = true; app.playerController.play(track, ui.downloads, PlaybackContext.DOWNLOADS) }, { snackbar = it }, { vm.clearDownloads(); snackbar = "Downloads cleared" })
     }
    }
-   if (playerOpen && player.current != null) PlayerScreen(player, ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
+   if (playerOpen && (player.current != null || selectedTrack != null)) PlayerScreen(player.copy(current = player.current ?: selectedTrack), ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
   }
  }
  if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings, { backupLauncher.launch("VirexDL-backup.json") }, { restoreLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) })
@@ -191,7 +191,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }, { vm.createPlaylist("My Playlist", listOf(addToPlaylistTrack!!)); snackbar = "Playlist created"; addToPlaylistTrack = null })
  if (createPlaylist) CreatePlaylistDialog({ createPlaylist = false }, { vm.createPlaylist(it); createPlaylist = false; snackbar = "Playlist created" })
  if (importPlaylist) ImportPlaylistDialog({ importPlaylist = false }, { name, lines -> vm.importPlaylistFromNames(name, lines) }, ui.importBusy, ui.importProgress, ui.importMatched)
- if (playlistDetail != null) PlaylistDetailDialog(playlistDetail!!, ui, vm, { playlistDetail = null }, { track -> app.playerController.play(track, ui.home, PlaybackContext.PLAYLIST); playerOpen = true }, { snackbar = it })
+ if (playlistDetail != null) PlaylistDetailDialog(playlistDetail!!, ui, vm, { playlistDetail = null }, { track -> selectedTrack = track; playerOpen = true; app.playerController.play(track, ui.home, PlaybackContext.PLAYLIST) }, { snackbar = it })
 }
 
 @Composable private fun HomeScreen(ui: com.virex.music.feature.UiState, onCategory: (String)->Unit, onShuffle: ()->Unit, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onDownload:(Track)->Unit, onLong:(Track)->Unit, onSettings:()->Unit, onMessage:(String)->Unit) {
@@ -282,7 +282,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 
 @Composable private fun PlaylistsScreen(playlists: List<Playlist>, vm: VirexViewModel, onNew:()->Unit, onImport:()->Unit, onOpen:(Playlist)->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
-  Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Playlists", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.weight(1f)); TextButton(onClick = onImport) { Text("Import", color = VirexGreen) }; Button(onClick = onNew, colors = ButtonDefaults.buttonColors(containerColor = VirexGreen, contentColor = Color.Black)) { Icon(Icons.Default.Add, null); Text(" New") } }
+  Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Playlists", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.weight(1f)); TextButton(onClick = onImport) { Text("Import", color = VirexGreen) }; Button(onClick = onNew, shape = RoundedCornerShape(50), colors = ButtonDefaults.buttonColors(containerColor = VirexGreen, contentColor = Color.Black)) { Icon(Icons.Default.Add, null); Text(" New") } }
   if (playlists.isEmpty()) EmptyState("No playlists yet.", "Create playlist", onNew)
   else LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(playlists, key = { it.id }) { p -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(VirexCard).combinedClickable(onClick = { onOpen(p) }, onLongClick = { vm.deletePlaylist(p.id) }).padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(58.dp).clip(RoundedCornerShape(10.dp)).background(VirexControl), contentAlignment = Alignment.Center) { Icon(Icons.Default.LibraryMusic, null, tint = VirexGreen, modifier = Modifier.size(28.dp)) }; Spacer(Modifier.width(13.dp)); Column(Modifier.weight(1f)) { Text(p.name, color = Color.White, fontWeight = FontWeight.SemiBold); Text("${p.trackIds.size} songs", color = VirexMuted, fontSize = 12.sp) }; IconButton(onClick = { vm.deletePlaylist(p.id) }) { Icon(Icons.Default.Delete, "Delete playlist", tint = VirexMuted) } } } }
  }
@@ -338,7 +338,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
       IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, null, tint = Color.White, modifier = Modifier.size(32.dp)) }
       IconButton(onClick = onRepeat) { Icon(Icons.Default.Repeat, null, tint = if (state.repeat == RepeatMode.OFF) VirexMuted else accent) }
      }
-     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { OutlinedButton(onClick = { onDownload(track) }, modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Download, null, tint = accent); Text("Download", color = Color.White) }; OutlinedButton(onClick = { onShare(track) }, modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Share, null, tint = accent); Text("Share", color = Color.White) } }
+     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { OutlinedButton(onClick = { onDownload(track) }, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Download, null, tint = accent); Text("Download", color = Color.White) }; OutlinedButton(onClick = { onShare(track) }, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Share, null, tint = accent); Text("Share", color = Color.White) } }
      if (settings.visualizer) Visualizer(accent, state.isPlaying)
      Spacer(Modifier.weight(.35f))
     }
@@ -376,7 +376,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    SettingRow("Audio Visualizer", "Animated player visualizer", settings.visualizer) { v -> update { it.copy(visualizer = v) } }
    SettingRow("High Quality", "Prefer 320kbps when available", settings.highQuality) { v -> update { it.copy(highQuality = v) } }
    SettingRow("Crossfade", "Smooth 3s blend between tracks", settings.crossfade) { v -> update { it.copy(crossfade = v) } }
-   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Backup", color = Color.White) }; OutlinedButton(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Restore", color = Color.White) } }
+   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(onClick = onBackup, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f)) { Text("Backup", color = Color.White) }; OutlinedButton(onClick = onRestore, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f)) { Text("Restore", color = Color.White) } }
   }
  }, confirmButton = { TextButton(onClick = onClose) { Text("Done", color = VirexGreen) } })
 }
@@ -408,7 +408,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 
 @Composable private fun CreatePlaylistDialog(close:()->Unit, create:(String)->Unit) {
  var name by remember { mutableStateOf("My Playlist") }
- AlertDialog(onDismissRequest = close, containerColor = Color(0xFF171717), title = { Text("New Playlist", color = Color.White) }, text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, label = { Text("Playlist name") }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VirexGreen, focusedLabelColor = VirexGreen, cursorColor = VirexGreen)) }, confirmButton = { TextButton(onClick = { create(name.trim().ifBlank { "My Playlist" }) }) { Text("Create", color = VirexGreen) } }, dismissButton = { TextButton(onClick = close) { Text("Cancel", color = VirexMuted) } })
+ AlertDialog(onDismissRequest = close, containerColor = Color(0xFF171717), title = { Text("New Playlist", color = Color.White) }, text = { OutlinedTextField(value = name, onValueChange = { name = it }, shape = RoundedCornerShape(18.dp), singleLine = true, label = { Text("Playlist name") }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VirexGreen, focusedLabelColor = VirexGreen, cursorColor = VirexGreen)) }, confirmButton = { TextButton(onClick = { create(name.trim().ifBlank { "My Playlist" }) }) { Text("Create", color = VirexGreen) } }, dismissButton = { TextButton(onClick = close) { Text("Cancel", color = VirexMuted) } })
 }
 
 @Composable private fun ImportPlaylistDialog(close:()->Unit, onImport:(String,List<String>)->Unit, busy:Boolean, progress:Int, matched:Int) {
@@ -427,7 +427,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  val tracks = playlist.trackIds.mapNotNull { id -> ui.cachedTracks.firstOrNull { it.id == id } ?: ui.home.firstOrNull { it.id == id } ?: ui.results.firstOrNull { it.id == id } ?: ui.downloads.firstOrNull { it.id == id } }
  AlertDialog(onDismissRequest = close, containerColor = Color(0xFF151515), title = { Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = close) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold) } }, text = {
   Column {
-   Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { tracks.firstOrNull()?.let(play) }, colors = ButtonDefaults.buttonColors(containerColor = VirexGreen, contentColor = Color.Black)) { Icon(Icons.Default.PlayArrow, null); Text("Play all") }; Text("${playlist.trackIds.size} songs", color = VirexMuted, modifier = Modifier.align(Alignment.CenterVertically)) }
+   Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { tracks.firstOrNull()?.let(play) }, shape = RoundedCornerShape(50), colors = ButtonDefaults.buttonColors(containerColor = VirexGreen, contentColor = Color.Black)) { Icon(Icons.Default.PlayArrow, null); Text("Play all") }; Text("${playlist.trackIds.size} songs", color = VirexMuted, modifier = Modifier.align(Alignment.CenterVertically)) }
    if (tracks.isEmpty()) Text("Search for songs and add them to this playlist.", color = VirexMuted, modifier = Modifier.padding(top = 12.dp))
    tracks.forEach { t -> Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f).combinedClickable(onClick = { play(t) }, onLongClick = { play(t) })) { Text(t.title, color = Color.White, maxLines = 1); Text(t.artist, color = VirexMuted, fontSize = 11.sp) }; IconButton(onClick = { vm.removeTrackFromPlaylist(playlist.id, t.id); message("Removed from playlist") }) { Icon(Icons.Default.Close, null, tint = VirexMuted) } } }
   }
