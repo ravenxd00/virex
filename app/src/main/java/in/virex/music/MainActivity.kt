@@ -2,10 +2,15 @@
 
 package in.virex.music
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -60,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -88,6 +94,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  val context = androidx.compose.ui.platform.LocalContext.current
+ val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+ LaunchedEffect(Unit) { if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
  val app = context.applicationContext as VirexApplication
  val ui by vm.ui.collectAsStateWithLifecycle()
  val player by app.playerController.state.collectAsStateWithLifecycle()
