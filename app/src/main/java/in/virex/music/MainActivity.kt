@@ -356,7 +356,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }
 }
 
-@Composable private fun SettingsDialog(settings: AppSettings, onClose:()->Unit, update:((AppSettings)->AppSettings)->Unit) {
+@Composable private fun SettingsDialog(settings: AppSettings, onClose:()->Unit, update:((AppSettings)->AppSettings)->Unit, onBackup:()->Unit, onRestore:()->Unit) {
  AlertDialog(onDismissRequest = onClose, containerColor = Color(0xFF151515), title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) }, text = {
   Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
    Text("Accent colour", color = VirexMuted, fontSize = 12.sp)
@@ -366,6 +366,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    SettingRow("Audio Visualizer", "Animated player visualizer", settings.visualizer) { v -> update { it.copy(visualizer = v) } }
    SettingRow("High Quality", "Prefer 320kbps when available", settings.highQuality) { v -> update { it.copy(highQuality = v) } }
    SettingRow("Crossfade", "Smooth 3s blend between tracks", settings.crossfade) { v -> update { it.copy(crossfade = v) } }
+   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(onClick = onBackup, modifier = Modifier.weight(1f)) { Text("Backup", color = Color.White) }; OutlinedButton(onClick = onRestore, modifier = Modifier.weight(1f)) { Text("Restore", color = Color.White) } }
   }
  }, confirmButton = { TextButton(onClick = onClose) { Text("Done", color = VirexGreen) } })
 }
@@ -400,12 +401,18 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  AlertDialog(onDismissRequest = close, containerColor = Color(0xFF171717), title = { Text("New Playlist", color = Color.White) }, text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true, label = { Text("Playlist name") }, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = VirexGreen, focusedLabelColor = VirexGreen, cursorColor = VirexGreen)) }, confirmButton = { TextButton(onClick = { create(name.trim().ifBlank { "My Playlist" }) }) { Text("Create", color = VirexGreen) } }, dismissButton = { TextButton(onClick = close) { Text("Cancel", color = VirexMuted) } })
 }
 
-@Composable private fun ImportPlaylistDialog(close:()->Unit, onImport:(String,List<Track>)->Unit, find:(String)->Track?) {
+@Composable private fun ImportPlaylistDialog(close:()->Unit, onImport:(String,List<String>)->Unit, busy:Boolean, progress:Int, matched:Int) {
  var name by remember { mutableStateOf("Imported Playlist") }
  var songs by remember { mutableStateOf("") }
- AlertDialog(onDismissRequest = close, containerColor = Color(0xFF171717), title = { Text("Import Playlist", color = Color.White) }, text = { Column { OutlinedTextField(name, { name = it }, label = { Text("Playlist title") }, singleLine = true); Spacer(Modifier.height(8.dp)); OutlinedTextField(songs, { songs = it }, label = { Text("Paste song names, one per line") }, minLines = 4, maxLines = 8) } }, confirmButton = { TextButton(onClick = { val parsed = songs.lines().map(String::trim).filter(String::isNotBlank).distinct().mapNotNull(find).distinctBy { it.id }; onImport(name.ifBlank { "Imported Playlist" }, parsed) }) { Text("Import", color = VirexGreen) } }, dismissButton = { TextButton(onClick = close) { Text("Cancel", color = VirexMuted) } })
+ AlertDialog(onDismissRequest = { if (!busy) close() }, containerColor = Color(0xFF171717), title = { Text("Import Playlist", color = Color.White) }, text = {
+  Column {
+   OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Playlist title") }, singleLine = true, enabled = !busy)
+   Spacer(Modifier.height(8.dp))
+   OutlinedTextField(value = songs, onValueChange = { songs = it }, label = { Text("Paste song names, one per line") }, minLines = 4, maxLines = 8, enabled = !busy)
+   if (busy) { Spacer(Modifier.height(12.dp)); LinearProgressIndicator(progress = { progress / 100f }, modifier = Modifier.fillMaxWidth(), color = VirexGreen); Text("Resolving songs… $progress% · $matched matched", color = VirexMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp)) }
+  }
+ }, confirmButton = { TextButton(enabled = !busy && songs.lines().any { it.isNotBlank() }, onClick = { onImport(name.ifBlank { "Imported Playlist" }, songs.lines()) }) { Text(if (busy) "Importing…" else "Import", color = VirexGreen) } }, dismissButton = { TextButton(enabled = !busy, onClick = close) { Text("Cancel", color = VirexMuted) } })
 }
-
 @Composable private fun PlaylistDetailDialog(playlist: Playlist, ui: in.virex.music.feature.UiState, vm: VirexViewModel, close:()->Unit, play:(Track)->Unit, message:(String)->Unit) {
  val tracks = playlist.trackIds.mapNotNull { id -> ui.home.firstOrNull { it.id == id } ?: ui.results.firstOrNull { it.id == id } ?: ui.downloads.firstOrNull { it.id == id } }
  AlertDialog(onDismissRequest = close, containerColor = Color(0xFF151515), title = { Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = close) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold) } }, text = {
