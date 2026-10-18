@@ -17,5 +17,5 @@ val VirexBorder = Color(0x0DFFFFFF)
 
 @Composable
 fun VirexTheme(accent: Color = VirexGreen, content: @Composable () -> Unit) {
- MaterialTheme(colorScheme = darkColorScheme(primary = accent, secondary = accent, background = VirexBlack, surface = VirexCard, onPrimary = VirexBlack, onBackground = Color.White, onSurface = Color.White, outline = VirexBorder), shapes = Shapes(extraSmall = RoundedCornerShape(50.dp), small = RoundedCornerShape(14.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(26.dp), extraLarge = RoundedCornerShape(30.dp)), content = content)
+ MaterialTheme(colorScheme = darkColorScheme(primary = accent, secondary = accent, background = VirexBlack, surface = VirexCard, onPrimary = VirexBlack, onBackground = Color.White, onSurface = Color.White, outline = VirexBorder), shapes = Shapes(extraSmall = RoundedCornerShape(50.dp), small = RoundedCornerShape(50.dp), medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(26.dp), extraLarge = RoundedCornerShape(30.dp)), content = content)
 }
