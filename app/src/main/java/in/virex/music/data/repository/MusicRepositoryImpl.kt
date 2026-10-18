@@ -37,7 +37,7 @@ class MusicRepositoryImpl(
 ) : MusicRepository {
  override suspend fun search(query: String, highQuality: Boolean): Result<List<Track>> = runCatching {
   require(query.isNotBlank()) { "Enter a song, artist, or album to search." }
-  mapTracks(musicApi.search(query.trim(), 20), highQuality)
+  val tracks = mapTracks(musicApi.search(query.trim(), 20), highQuality); trackDao.upsertAll(tracks.map { it.entity() }); tracks
  }
  override suspend fun category(category: String, highQuality: Boolean): Result<List<Track>> {
   val query = when(category.lowercase(Locale.ROOT)) {
@@ -53,7 +53,7 @@ class MusicRepositoryImpl(
  }
  override suspend fun suggestions(seed: Track, highQuality: Boolean): Result<List<Track>> = runCatching {
   val json = musicApi.suggestions(seed.id, 20)
-  mapTracks(json, highQuality).filterNot { it.id == seed.id }.distinctBy { it.id }
+  val tracks = mapTracks(json, highQuality).filterNot { it.id == seed.id }.distinctBy { it.id }; trackDao.upsertAll(tracks.map { it.entity() }); tracks
  }
  override suspend fun lyrics(track: Track): Result<SongLyrics> = runCatching {
   val json = runCatching { lyricsApi.get(track.title, track.artist, (track.durationMs / 1000).coerceAtLeast(0)) }.getOrNull()
@@ -87,6 +87,7 @@ class MusicRepositoryImpl(
    } catch (e: Exception) { file.delete(); throw e } finally { connection.disconnect() }
   }
  }
+ override fun observeCachedTracks(): Flow<List<Track>> = trackDao.observeCachedTracks().map { rows -> rows.map { it.model() } }
  override fun observeDownloads(): Flow<List<Track>> = trackDao.observeDownloads().map { rows -> rows.map { it.model() } }
  override fun observePlaylists(): Flow<List<Playlist>> = playlistDao.observeAll().map { rows -> rows.map { Playlist(it.id, it.name, runCatching { JSONArray(it.trackIdsJson).let { a -> (0 until a.length()).map(a::getString) } }.getOrDefault(emptyList()), it.createdAt) } }
  override suspend fun savePlaylist(playlist: Playlist) { playlistDao.upsert(PlaylistEntity(playlist.id, playlist.name, JSONArray(playlist.trackIds).toString(), playlist.createdAt)) }
