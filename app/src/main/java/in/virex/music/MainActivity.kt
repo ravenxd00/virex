@@ -234,15 +234,29 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 }
 
 @Composable private fun SongCard(track: Track, accent: Color, onPlay:()->Unit, onAdd:()->Unit, onLong:()->Unit, onDownload:()->Unit) {
- Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(10.dp)) {
-  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)).background(VirexControl)) {
-   AsyncImage(track.artworkUrl, null, Modifier.fillMaxSize())
-   IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(36.dp).clip(CircleShape).background(Color.Black.copy(alpha = .68f))) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.White, modifier = Modifier.size(27.dp)) }
+ Column(
+  Modifier.fillMaxWidth()
+   .clip(RoundedCornerShape(20.dp))
+   .background(VirexCard)
+   .border(1.dp, Color.White.copy(alpha = .045f), RoundedCornerShape(20.dp))
+   .combinedClickable(onClick = onPlay, onLongClick = onLong)
+   .padding(9.dp)
+ ) {
+  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp)).background(VirexControl)) {
+   AsyncImage(model = track.artworkUrl.takeIf { it.isNotBlank() }, contentDescription = "Artwork for ${track.title}", modifier = Modifier.fillMaxSize())
+   IconButton(
+    onClick = onAdd,
+    modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(34.dp).clip(CircleShape).background(Color.Black.copy(alpha = .72f))
+   ) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.White, modifier = Modifier.size(23.dp)) }
   }
-  Spacer(Modifier.height(9.dp))
-  Text(track.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-  Text(track.artist, fontSize = 12.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 5.dp))
-  Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) { IconButton(onClick = onDownload, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Download, "Download", tint = accent, modifier = Modifier.size(22.dp)) } }
+  Spacer(Modifier.height(10.dp))
+  Text(track.title, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  Text(track.artist.ifBlank { "Unknown artist" }, fontSize = 12.sp, lineHeight = 16.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+  Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+   Box(Modifier.size(30.dp).clip(CircleShape).background(accent.copy(alpha = .12f)).combinedClickable(onClick = onDownload, onLongClick = onDownload), contentAlignment = Alignment.Center) {
+    Icon(Icons.Default.Download, "Download", tint = accent, modifier = Modifier.size(18.dp))
+   }
+  }
  }
 }
 
