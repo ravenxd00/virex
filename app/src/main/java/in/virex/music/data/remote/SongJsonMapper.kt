@@ -64,6 +64,30 @@ object SongJsonMapper {
   val subtitle = song.string("subtitle")
   return subtitle.takeIf { it.isNotBlank() }.orEmpty()
  }
+ private fun artistNames(song: JsonObject): String {
+  val direct = song.string("primaryArtists", "primary_artists", "artist", "singers", "subtitle")
+  if (direct.isNotBlank() && !direct.trim().startsWith("{") && !direct.trim().startsWith("[")) return direct
+  val artists = song.get("artists")?.takeIf { it.isJsonObject }?.asJsonObject
+  val primary = artists?.get("primary") ?: song.get("primaryArtists") ?: song.get("primary_artists")
+  if (primary?.isJsonArray == true) {
+   return primary.asJsonArray.mapNotNull { item ->
+    if (item.isJsonObject) item.asJsonObject.string("name", "title", "artist")
+    else item.takeIf { it.isJsonPrimitive }?.asString
+   }.filter { it.isNotBlank() }.distinct().joinToString(", ")
+  }
+  if (primary?.isJsonObject == true) {
+   val obj = primary.asJsonObject
+   val nested = obj.get("name")?.takeIf { it.isJsonPrimitive }?.asString
+   if (!nested.isNullOrBlank()) return nested
+   return obj.entrySet().mapNotNull { (_, value) ->
+    if (value.isJsonObject) value.asJsonObject.get("name")?.asString
+    else value.takeIf { it.isJsonPrimitive }?.asString
+   }.filterNotNull().filter { it.isNotBlank() }.distinct().joinToString(", ")
+  }
+  val fallback = song.get("artists")
+  if (fallback?.isJsonArray == true) return fallback.asJsonArray.mapNotNull { it.takeIf { v -> v.isJsonObject }?.asJsonObject?.string("name") }.filter { it.isNotBlank() }.distinct().joinToString(", ")
+  return artists?.string("name", "primary", "artist").orEmpty()
+ }
  private fun bestImage(song: JsonObject): String {
   val image = song.get("image") ?: song.get("images") ?: song.get("artwork") ?: song.get("album")?.takeIf { it.isJsonObject }?.asJsonObject?.get("image")
    ?: return ""
