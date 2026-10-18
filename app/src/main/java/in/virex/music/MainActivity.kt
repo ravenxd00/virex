@@ -77,7 +77,11 @@ import in.virex.music.core.design.*
 import in.virex.music.domain.model.*
 import in.virex.music.feature.VirexViewModel
 import in.virex.music.persistence.AppSettings
+import in.virex.music.persistence.BackupDocument
+import in.virex.music.persistence.BackupManager
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val destinations = listOf("home", "search", "playlists", "downloads")
 private val categories = listOf("Trending", "Punjabi", "Hip Hop", "Bollywood", "Global Hits", "Lofi", "EDM")
@@ -114,6 +118,28 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  var importPlaylist by remember { mutableStateOf(false) }
  var playlistDetail by remember { mutableStateOf<Playlist?>(null) }
  val scope = rememberCoroutineScope()
+ val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+  if (uri != null) scope.launch(Dispatchers.IO) {
+   val document = BackupDocument(playlists = ui.playlists, accent = ui.settings.accent, visualizer = ui.settings.visualizer, highQuality = ui.settings.highQuality, crossfade = ui.settings.crossfade)
+   runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(BackupManager.encode(document).toByteArray(Charsets.UTF_8)) } ?: error("Unable to open backup destination.") }
+    .onSuccess { scope.launch { snackbar = "Backup saved." } }
+    .onFailure { error -> scope.launch { snackbar = error.message ?: "Backup failed." } }
+  }
+ }
+ val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+  if (uri != null) scope.launch(Dispatchers.IO) {
+   runCatching {
+    val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: error("Unable to read backup file.")
+    BackupManager.decode(json).getOrThrow()
+   }.onSuccess { document -> scope.launch {
+    vm.replacePlaylists(document.playlists)
+    vm.updateSettings { it.copy(accent = document.accent, visualizer = document.visualizer, highQuality = document.highQuality, crossfade = document.crossfade) }
+    snackbar = "Backup restored."
+   } }.onFailure { error -> scope.launch { snackbar = error.message ?: "Invalid backup file." } }
+  }
+ }
+ var importWasBusy by remember { mutableStateOf(false) }
+ LaunchedEffect(ui.importBusy) { if (ui.importBusy) importWasBusy = true else if (importPlaylist && importWasBusy) { importPlaylist = false; importWasBusy = false; snackbar = ui.error ?: ("Imported " + ui.importMatched + " tracks.") } }
  LaunchedEffect(ui.error) { ui.error?.let { snackbar = it } }
  Scaffold(
   containerColor = VirexBlack,
@@ -155,13 +181,13 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    if (playerOpen && player.current != null) PlayerScreen(player, ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
   }
  }
- if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings)
+ if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings, { backupLauncher.launch("VirexDL-backup.json") }, { restoreLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) })
  if (showTrackActions && selectedTrack != null) TrackActionsDialog(selectedTrack!!, { showTrackActions = false }, { addToPlaylistTrack = selectedTrack; showTrackActions = false }, { vm.download(selectedTrack!!); snackbar = "Download started"; showTrackActions = false }, { shareTrack(context, selectedTrack!!); showTrackActions = false })
  if (addToPlaylistTrack != null) AddToPlaylistDialog(ui.playlists, { addToPlaylistTrack = null }, { playlist ->
   vm.addTrackToPlaylist(playlist.id, addToPlaylistTrack!!); snackbar = "Added to ${playlist.name}"; addToPlaylistTrack = null
  }, { vm.createPlaylist("My Playlist", listOf(addToPlaylistTrack!!)); snackbar = "Playlist created"; addToPlaylistTrack = null })
  if (createPlaylist) CreatePlaylistDialog({ createPlaylist = false }, { vm.createPlaylist(it); createPlaylist = false; snackbar = "Playlist created" })
- if (importPlaylist) ImportPlaylistDialog({ importPlaylist = false }, { name, tracks -> vm.importPlaylist(name, tracks); importPlaylist = false; snackbar = "Imported ${tracks.size} tracks" }, { query -> vm.ui.value.results.firstOrNull { it.title.contains(query, true) } })
+ if (importPlaylist) ImportPlaylistDialog({ importPlaylist = false }, { name, lines -> vm.importPlaylistFromNames(name, lines) }, ui.importBusy, ui.importProgress, ui.importMatched)
  if (playlistDetail != null) PlaylistDetailDialog(playlistDetail!!, ui, vm, { playlistDetail = null }, { track -> app.playerController.play(track, ui.home, PlaybackContext.PLAYLIST); playerOpen = true }, { snackbar = it })
 }
 
