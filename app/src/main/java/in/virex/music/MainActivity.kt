@@ -93,6 +93,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  val player by app.playerController.state.collectAsStateWithLifecycle()
  val nav = rememberNavController()
  val snackbarHostState = remember { SnackbarHostState() }
+ var snackbar by remember { mutableStateOf<String?>(null) }
  LaunchedEffect(snackbar) { snackbar?.let { snackbarHostState.showSnackbar(it); snackbar = null } }
  val entry by nav.currentBackStackEntryAsState()
  val route = entry?.destination?.route ?: "home"
@@ -104,7 +105,6 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  var createPlaylist by remember { mutableStateOf(false) }
  var importPlaylist by remember { mutableStateOf(false) }
  var playlistDetail by remember { mutableStateOf<Playlist?>(null) }
- var snackbar by remember { mutableStateOf<String?>(null) }
  val scope = rememberCoroutineScope()
  LaunchedEffect(ui.error) { ui.error?.let { snackbar = it } }
  Scaffold(
