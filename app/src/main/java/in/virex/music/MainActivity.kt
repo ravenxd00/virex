@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package in.virex.music
 
 import android.content.Intent
@@ -90,6 +92,8 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  val ui by vm.ui.collectAsStateWithLifecycle()
  val player by app.playerController.state.collectAsStateWithLifecycle()
  val nav = rememberNavController()
+ val snackbarHostState = remember { SnackbarHostState() }
+ LaunchedEffect(snackbar) { snackbar?.let { snackbarHostState.showSnackbar(it); snackbar = null } }
  val entry by nav.currentBackStackEntryAsState()
  val route = entry?.destination?.route ?: "home"
  var showSettings by remember { mutableStateOf(false) }
@@ -105,7 +109,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  LaunchedEffect(ui.error) { ui.error?.let { snackbar = it } }
  Scaffold(
   containerColor = VirexBlack,
-  snackbarHost = { SnackbarHost(remember { SnackbarHostState() }.also { host -> LaunchedEffect(snackbar) { snackbar?.let { host.showSnackbar(it); snackbar = null } } }) },
+  snackbarHost = { SnackbarHost(snackbarHostState) },
   bottomBar = {
    Column(Modifier.fillMaxWidth().background(Color(0xFF0B0B0B))) {
     AnimatedVisibility(player.current != null && !playerOpen) {
