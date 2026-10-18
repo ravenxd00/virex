@@ -15,7 +15,7 @@ object SongJsonMapper {
     val id = song.string("id", "songId", "trackId", "perma_url")
     if (id.isBlank()) return@runCatching null
     val title = song.string("name", "title", "song", "trackName").decodeHtml().ifBlank { "Unknown title" }
-    val artists = artistName(song).decodeHtml().ifBlank { "Unknown artist" }
+    val artists = artistNames(song).ifBlank { artistName(song) }.decodeHtml().ifBlank { "Unknown artist" }
     val album = song.objectAt("album")?.string("name", "title").orEmpty()
     val image = bestImage(song)
     val audio = bestAudio(song, highQuality)
