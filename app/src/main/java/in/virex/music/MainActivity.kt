@@ -154,8 +154,8 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   snackbarHost = { SnackbarHost(snackbarHostState) },
   bottomBar = {
    Column(Modifier.fillMaxWidth().background(Color(0xFF0B0B0B))) {
-    AnimatedVisibility(player.current != null && !playerOpen) {
-     MiniPlayer(player.current, player.isPlaying, player.positionMs, player.durationMs, { playerOpen = true }, { app.playerController.toggle() }, { app.playerController.next() })
+    AnimatedVisibility((player.current != null || selectedTrack != null) && !playerOpen) {
+     MiniPlayer(player.current ?: selectedTrack, player.isPlaying, player.positionMs, player.durationMs, { playerOpen = true }, { app.playerController.toggle() }, { app.playerController.next() })
     }
     NavigationBar(containerColor = Color(0xFF0B0B0B), contentColor = ui.settings.accent.toColor(), tonalElevation = 0.dp, windowInsets = WindowInsets.navigationBars) {
      val labels = listOf("Home", "Search", "Playlists", "Downloads")
@@ -256,7 +256,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   }
   Spacer(Modifier.height(8.dp))
   Text(track.title, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-  Text(track.artist.ifBlank { "Unknown artist" }, fontSize = 12.sp, lineHeight = 16.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+  Text(track.artist.ifBlank { "Unknown artist" }, fontSize = 11.sp, lineHeight = 14.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
   Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
    Box(Modifier.size(30.dp).clip(CircleShape).background(accent.copy(alpha = .12f)).combinedClickable(onClick = onDownload, onLongClick = onDownload), contentAlignment = Alignment.Center) {
     Icon(Icons.Default.Download, "Download", tint = accent, modifier = Modifier.size(18.dp))
@@ -465,21 +465,21 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }
 }
 @Composable private fun Visualizer(accent: Color, playing: Boolean) {
- val transition = rememberInfiniteTransition(label = "audio-visualizer")
- Row(Modifier.fillMaxWidth().height(34.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-  repeat(31) { i ->
-   val target = if (playing) (7 + ((i * 13 + 9) % 23)).toFloat() else 4f
-   val height by transition.animateFloat(
-    initialValue = 4f,
-    targetValue = target,
-    animationSpec = infiniteRepeatable(animation = tween(durationMillis = 300 + (i % 5) * 110, delayMillis = i * 17), repeatMode = AnimationRepeatMode.Reverse),
-    label = "bar-$i"
+ val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "audio-visualizer")
+ Row(Modifier.fillMaxWidth().height(36.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+  repeat(25) { i ->
+   val wave by transition.animateFloat(
+    initialValue = 5f + ((i * 7) % 9),
+    targetValue = 7f + ((i * 13 + 9) % 25),
+    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+     animation = androidx.compose.animation.core.tween(durationMillis = 260 + (i % 5) * 90, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+     repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+    ), label = "bar-$i"
    )
-   Box(Modifier.padding(horizontal = 1.5.dp).width(3.dp).height((if (playing) height else 4f).dp).clip(CircleShape).background(accent.copy(alpha = if (playing) .92f else .3f)))
+   Box(Modifier.padding(horizontal = 2.dp).width(3.dp).height((if (playing) wave else 4f).dp).clip(CircleShape).background(accent.copy(alpha = if (playing) .9f else .25f)))
   }
  }
 }
-
 private fun Long.toColor(): Color = Color(this)
 private fun AppSettings.accentColor() = Color(accent)
 private fun AppSettings.accentColorLong() = accent.toColor()
