@@ -195,7 +195,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
   item {
    Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 16.dp, top = 16.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-    Box(Modifier.size(30.dp).clip(CircleShape).background(VirexGreen), contentAlignment = Alignment.Center) { Text("V", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 17.sp) }
+    AsyncImage(model = R.drawable.virex_logo, contentDescription = "Virex logo", modifier = Modifier.size(32.dp).clip(CircleShape))
     Spacer(Modifier.width(10.dp))
     Text("Virex", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
     Text("DL", fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, color = ui.settings.accent.toColor())
