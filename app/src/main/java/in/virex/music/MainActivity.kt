@@ -486,6 +486,7 @@ private fun AppSettings.accentColorLong() = accent.toColor()
 private fun formatBytes(bytes: Long): String = when { bytes < 1024 -> "${bytes} B"; bytes < 1024*1024 -> "${bytes/1024} KB"; else -> String.format("%.1f MB", bytes / (1024.0*1024.0)) }
 private fun timeLabel(ms: Long): String = "%d:%02d".format((ms.coerceAtLeast(0)/1000)/60, (ms.coerceAtLeast(0)/1000)%60)
 private fun shareTrack(context: android.content.Context, track: Track) {
- val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${track.title} — ${track.artist}")
+ val shareText = buildString { append(track.title); append(" — "); append(track.artist); if (track.streamUrl.startsWith("https://")) { append("\n"); append(track.streamUrl) } }
+ val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_SUBJECT, "${track.title} — ${track.artist}").putExtra(Intent.EXTRA_TEXT, shareText)
  context.startActivity(Intent.createChooser(send, "Share song").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
