@@ -34,6 +34,7 @@ class PlayerController(context: Context) {
  private var playbackContext = PlaybackContext.RADIO
  private val knownTracks = linkedMapOf<String, Track>()
  private var pendingStart: Triple<Track, List<Track>, PlaybackContext>? = null
+ private val tracksById = linkedMapOf<String, Track>()
  private val pendingAppend = mutableListOf<Track>()
  private val listener = object : Player.Listener {
   override fun onEvents(player: Player, events: Player.Events) { publish() }
@@ -55,6 +56,7 @@ class PlayerController(context: Context) {
   knownTracks[track.id] = track
   val index = items.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
   playbackContext = context
+  items.forEach { tracksById[it.id] = it }
   c.setMediaItems(items.map { it.toMediaItem() }, index, 0L)
   c.prepare()
   c.play()
