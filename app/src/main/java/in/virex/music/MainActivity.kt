@@ -85,7 +85,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun VirexRoot(vm: VirexViewModel = viewModel()) {
- val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as VirexApplication
+ val context = androidx.compose.ui.platform.LocalContext.current
+ val app = context.applicationContext as VirexApplication
  val ui by vm.ui.collectAsStateWithLifecycle()
  val player by app.playerController.state.collectAsStateWithLifecycle()
  val nav = rememberNavController()
@@ -139,11 +140,11 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
      DownloadsScreen(ui.downloads, { track -> app.playerController.play(track, ui.downloads, PlaybackContext.DOWNLOADS); playerOpen = true }, { snackbar = it })
     }
    }
-   if (playerOpen && player.current != null) PlayerScreen(player, ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(this@VirexRootContext(), track) })
+   if (playerOpen && player.current != null) PlayerScreen(player, ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
   }
  }
  if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings)
- if (showTrackActions && selectedTrack != null) TrackActionsDialog(selectedTrack!!, { showTrackActions = false }, { addToPlaylistTrack = selectedTrack; showTrackActions = false }, { vm.download(selectedTrack!!); snackbar = "Download started"; showTrackActions = false }, { shareTrack(androidx.compose.ui.platform.LocalContext.current, selectedTrack!!); showTrackActions = false })
+ if (showTrackActions && selectedTrack != null) TrackActionsDialog(selectedTrack!!, { showTrackActions = false }, { addToPlaylistTrack = selectedTrack; showTrackActions = false }, { vm.download(selectedTrack!!); snackbar = "Download started"; showTrackActions = false }, { shareTrack(context, selectedTrack!!); showTrackActions = false })
  if (addToPlaylistTrack != null) AddToPlaylistDialog(ui.playlists, { addToPlaylistTrack = null }, { playlist ->
   vm.addTrackToPlaylist(playlist.id, addToPlaylistTrack!!); snackbar = "Added to ${playlist.name}"; addToPlaylistTrack = null
  }, { vm.createPlaylist("My Playlist", listOf(addToPlaylistTrack!!)); snackbar = "Playlist created"; addToPlaylistTrack = null })
@@ -260,7 +261,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  if (track == null) return
  Column(Modifier.fillMaxWidth().background(Color(0xFF111111)).combinedClickable(onClick = onOpen, onLongClick = onOpen).padding(horizontal = 12.dp, vertical = 8.dp)) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-   AsyncImage(track.artworkUrl.ifBlank { null }, null, Modifier.size(43.dp).clip(RoundedCornerShape(8.dp)))
+   AsyncImage(track.artworkUrl.takeIf { it.isNotBlank() }, null, Modifier.size(43.dp).clip(RoundedCornerShape(8.dp)))
    Spacer(Modifier.width(10.dp))
    Column(Modifier.weight(1f)) { Text(track.title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(track.artist, color = VirexMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
    IconButton(onClick = onToggle) { Icon(if (playing) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = Color.White) }
@@ -403,4 +404,3 @@ private fun shareTrack(context: android.content.Context, track: Track) {
  val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${track.title} — ${track.artist}")
  context.startActivity(Intent.createChooser(send, "Share song").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
-private fun VirexRootContext(): android.content.Context = android.app.Application() // placeholder replaced below
