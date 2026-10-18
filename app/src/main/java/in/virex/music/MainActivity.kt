@@ -20,6 +20,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -321,7 +322,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(VirexControl).padding(4.dp)) { listOf("Player","Lyrics","Queue").forEach { p -> Box(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (page == p) accent.copy(alpha = .18f) else Color.Transparent).combinedClickable(onClick = { page = p }, onLongClick = { page = p }).padding(vertical = 10.dp), contentAlignment = Alignment.Center) { Text(p, color = if (page == p) accent else VirexMuted, fontWeight = FontWeight.SemiBold) } } }
    when (page) {
     "Queue" -> LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { items(state.queue) { t -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (t.id == track.id) accent.copy(alpha = .12f) else VirexCard).combinedClickable(onClick = { onQueue(state.queue.indexOf(t)); page = "Player" }, onLongClick = { onQueue(state.queue.indexOf(t)); page = "Player" }).padding(10.dp), verticalAlignment = Alignment.CenterVertically) { AsyncImage(t.artworkUrl, null, Modifier.size(45.dp).clip(RoundedCornerShape(8.dp))); Spacer(Modifier.width(10.dp)); Column(Modifier.weight(1f)) { Text(t.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(t.artist, color = VirexMuted, fontSize = 12.sp) }; if (t.id == track.id) Icon(Icons.Default.PlayArrow, null, tint = accent) } } }
-    "Lyrics" -> LyricsPanel(track, onShare)
+    "Lyrics" -> LyricsPanel(track, state.positionMs, onShare)
     else -> {
      Spacer(Modifier.weight(.5f))
      AsyncImage(track.artworkUrl.ifBlank { null }, null, Modifier.fillMaxWidth(.86f).aspectRatio(1f).clip(RoundedCornerShape(20.dp)).align(Alignment.CenterHorizontally).background(VirexCard))
@@ -345,18 +346,25 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }
 }
 
-@Composable private fun LyricsPanel(track: Track, onShare:(Track)->Unit) {
+@Composable private fun LyricsPanel(track: Track, positionMs: Long, onShare:(Track)->Unit) {
  val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as VirexApplication
+ val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
  var lines by remember(track.id) { mutableStateOf<List<LyricsLine>>(emptyList()) }
  var busy by remember(track.id) { mutableStateOf(true) }
  var error by remember(track.id) { mutableStateOf<String?>(null) }
+ val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+ val activeIndex = lines.indexOfLast { it.timeMs != null && it.timeMs <= positionMs }
  LaunchedEffect(track.id) { val r = app.repository.lyrics(track); lines = r.getOrNull()?.lines.orEmpty(); error = r.exceptionOrNull()?.message ?: if (lines.isEmpty()) "Lyrics are unavailable for this track." else null; busy = false }
+ LaunchedEffect(activeIndex) { if (activeIndex >= 0 && lines.isNotEmpty()) listState.animateScrollToItem(activeIndex.coerceIn(0, lines.lastIndex)) }
  Column(Modifier.fillMaxSize().padding(top = 18.dp)) {
-  Row(verticalAlignment = Alignment.CenterVertically) { Text("Lyrics", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton(onClick = { onShare(track) }) { Text("Share", color = VirexGreen) } }
-  when { busy -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = VirexGreen) }; lines.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(error ?: "Instrumental or unavailable", color = VirexMuted) }; else -> LazyColumn(contentPadding = PaddingValues(bottom = 30.dp)) { items(lines) { line -> Text(line.text, color = Color.White.copy(alpha = .88f), fontSize = 19.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(vertical = 9.dp)) } } }
+  Row(verticalAlignment = Alignment.CenterVertically) { Text("Lyrics", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton(onClick = { if (lines.isNotEmpty()) clipboard.setText(androidx.compose.ui.text.AnnotatedString(lines.joinToString("\\n") { it.text })) }, enabled = lines.isNotEmpty()) { Text("Copy", color = VirexGreen) }; TextButton(onClick = { onShare(track) }) { Text("Share", color = VirexGreen) } }
+  when {
+   busy -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = VirexGreen) }
+   lines.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(error ?: "Instrumental or unavailable", color = VirexMuted) }
+   else -> LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 30.dp)) { itemsIndexed(lines) { index, line -> Text(line.text, color = if (index == activeIndex && line.timeMs != null) VirexGreen else Color.White.copy(alpha = .82f), fontSize = if (index == activeIndex && line.timeMs != null) 21.sp else 18.sp, fontWeight = if (index == activeIndex && line.timeMs != null) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.padding(vertical = 9.dp)) } }
+  }
  }
 }
-
 @Composable private fun SettingsDialog(settings: AppSettings, onClose:()->Unit, update:((AppSettings)->AppSettings)->Unit, onBackup:()->Unit, onRestore:()->Unit) {
  AlertDialog(onDismissRequest = onClose, containerColor = Color(0xFF151515), title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) }, text = {
   Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
