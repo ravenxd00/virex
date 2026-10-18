@@ -88,6 +88,7 @@ class MusicRepositoryImpl(
   }
  }
  override fun observeCachedTracks(): Flow<List<Track>> = trackDao.observeCachedTracks().map { rows -> rows.map { it.model() } }
+ override suspend fun clearDownloads() { val saved = trackDao.observeDownloads(); val rows = kotlinx.coroutines.flow.first(saved); rows.mapNotNull { it.localPath }.forEach { path -> runCatching { File(path).delete() } }; trackDao.clearDownloads() }
  override fun observeDownloads(): Flow<List<Track>> = trackDao.observeDownloads().map { rows -> rows.map { it.model() } }
  override fun observePlaylists(): Flow<List<Playlist>> = playlistDao.observeAll().map { rows -> rows.map { Playlist(it.id, it.name, runCatching { JSONArray(it.trackIdsJson).let { a -> (0 until a.length()).map(a::getString) } }.getOrDefault(emptyList()), it.createdAt) } }
  override suspend fun savePlaylist(playlist: Playlist) { playlistDao.upsert(PlaylistEntity(playlist.id, playlist.name, JSONArray(playlist.trackIds).toString(), playlist.createdAt)) }
