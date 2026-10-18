@@ -11,6 +11,7 @@ interface MusicRepository {
  suspend fun suggestions(seed: Track, highQuality: Boolean = false): Result<List<Track>>
  suspend fun lyrics(track: Track): Result<SongLyrics>
  suspend fun download(track: Track, highQuality: Boolean = false): Result<Track>
+ fun observeCachedTracks(): Flow<List<Track>>
  fun observeDownloads(): Flow<List<Track>>
  fun observePlaylists(): Flow<List<Playlist>>
  suspend fun savePlaylist(playlist: Playlist)
