@@ -12,6 +12,7 @@ import in.virex.music.data.local.TrackDao
 import in.virex.music.data.local.TrackEntity
 import in.virex.music.data.remote.LyricsApi
 import in.virex.music.data.remote.MusicApi
+import in.virex.music.data.remote.SongJsonMapper
 import in.virex.music.domain.model.LyricsLine
 import in.virex.music.domain.model.Playlist
 import in.virex.music.domain.model.SongLyrics
@@ -92,67 +93,7 @@ class MusicRepositoryImpl(
  override suspend fun deletePlaylist(id: String) { playlistDao.delete(id) }
  override suspend fun getTrack(id: String): Track? = trackDao.get(id)?.model()
 
- private fun mapTracks(root: JsonObject, highQuality: Boolean): List<Track> {
-  val arr = findArray(root) ?: return emptyList()
-  return arr.mapNotNull { e -> runCatching {
-   val o = e.asJsonObject
-   val id = o.string("id", "songId", "trackId").ifBlank { return@runCatching null }
-   val title = o.string("name", "title", "song", "trackName").ifBlank { "Unknown title" }.htmlDecode()
-   val artist = o.string("primaryArtists", "primary_artists", "artist", "singers", "subtitle").ifBlank {
-    o.obj("artists")?.let { a -> a.string("primary", "name") }.orEmpty()
-   }.htmlDecode().ifBlank { "Unknown artist" }
-   val album = o.obj("album")?.string("name", "title").orEmpty()
-   val image = bestImage(o, highQuality)
-   val audio = bestAudio(o, highQuality)
-   Track(id, title, artist, album, image, o.long("duration", "durationMs") * if (o.has("durationMs")) 1 else 1000, audio)
-  }.getOrNull() }
- }
- private fun findArray(root: JsonObject): JsonArray? {
-  fun search(e: JsonElement, depth: Int): JsonArray? {
-   if (depth > 5 || e.isJsonNull) return null
-   if (e.isJsonArray) return e.asJsonArray
-   if (!e.isJsonObject) return null
-   val o = e.asJsonObject
-   listOf("results", "songs", "data", "items", "tracks", "suggestions").forEach { key ->
-    val child = o.get(key) ?: return@forEach
-    val found = search(child, depth + 1)
-    if (found != null) return found
-   }
-   return null
-  }
-  return search(root, 0)
- }
- private fun bestImage(o: JsonObject, high: Boolean): String {
-  val image = o.get("image") ?: o.get("images") ?: o.get("artwork")
-  if (image == null || image.isJsonNull) return ""
-  if (image.isJsonPrimitive) return image.asString
-  if (image.isJsonArray) {
-   val all = image.asJsonArray.mapNotNull { e -> if (e.isJsonObject) e.asJsonObject.string("url", "link").takeIf(String::isNotBlank) else e.takeIf { it.isJsonPrimitive }?.asString }
-   return all.lastOrNull().orEmpty()
-  }
-  return image.asJsonObject.string("url", "link").ifBlank {
-   image.asJsonObject.entrySet().mapNotNull { it.value.takeIf { v -> v.isJsonPrimitive }?.asString }.lastOrNull().orEmpty()
-  }
- }
- private fun bestAudio(o: JsonObject, high: Boolean): String {
-  val direct = o.string("downloadUrl", "download_url", "url", "audioUrl", "media_url")
-  val candidates = o.get("downloadUrl") ?: o.get("download_url") ?: o.get("downloadUrls") ?: o.get("download_urls")
-  if (candidates?.isJsonArray == true) {
-   val list = candidates.asJsonArray.mapNotNull { e ->
-    if (e.isJsonObject) {
-     val q = e.asJsonObject.string("quality", "bitrate", "label")
-     val url = e.asJsonObject.string("url", "link")
-     Triple(q, url, e.asJsonObject.long("bitrate", "quality"))
-    } else null
-   }.filter { it.second.startsWith("https://") }
-   val selected = if (high) list.maxByOrNull { it.third } else list.minByOrNull { if (it.third in 1..159) 0 else if (it.third == 160 || it.first.contains("160")) 1 else 2 }
-   if (selected != null) return selected.second
-  }
-  if (direct.startsWith("https://")) return direct
-  val more = o.get("media") ?: o.get("stream")
-  if (more?.isJsonObject == true) return more.asJsonObject.string("url", "src")
-  return ""
- }
+ private fun mapTracks(root: JsonObject, highQuality: Boolean): List<Track> = SongJsonMapper.mapTracks(root, highQuality)
  private fun parseLrc(raw: String): List<LyricsLine> {
   val regex = Regex("""\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?](.*)""")
   return raw.lines().mapNotNull { line ->
