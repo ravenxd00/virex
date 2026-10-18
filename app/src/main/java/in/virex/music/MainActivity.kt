@@ -164,10 +164,10 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    NavHost(navController = nav, startDestination = "home", modifier = Modifier.fillMaxSize()) {
     composable("home") {
      HomeScreen(ui, { vm.loadCategory(it) }, vm::refreshCategory, { track ->
-      selectedTrack = track; val queue = ui.home
+      selectedTrack = track; val queue = QueuePolicy.distinctQueue(track, ui.home)
       app.playerController.play(track, queue, PlaybackContext.RADIO); playerOpen = true
       scope.launch { app.repository.suggestions(track, ui.settings.highQuality).getOrNull()?.let { app.playerController.append(it) } }
-     }, { addToPlaylistTrack = it }, { selectedTrack = it; showTrackActions = true }, { showSettings = true }, { snackbar = it })
+     }, { addToPlaylistTrack = it }, { vm.download(it); snackbar = "Download queued" }, { selectedTrack = it; showTrackActions = true }, { showSettings = true }, { snackbar = it })
     }
     composable("search") {
      SearchScreen(ui, vm, { track -> app.playerController.play(track, ui.results, PlaybackContext.SEARCH); playerOpen = true }, { addToPlaylistTrack = it }, { selectedTrack = it; showTrackActions = true })
@@ -192,7 +192,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  if (playlistDetail != null) PlaylistDetailDialog(playlistDetail!!, ui, vm, { playlistDetail = null }, { track -> app.playerController.play(track, ui.home, PlaybackContext.PLAYLIST); playerOpen = true }, { snackbar = it })
 }
 
-@Composable private fun HomeScreen(ui: com.virex.music.feature.UiState, onCategory: (String)->Unit, onShuffle: ()->Unit, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit, onSettings:()->Unit, onMessage:(String)->Unit) {
+@Composable private fun HomeScreen(ui: com.virex.music.feature.UiState, onCategory: (String)->Unit, onShuffle: ()->Unit, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onDownload:(Track)->Unit, onLong:(Track)->Unit, onSettings:()->Unit, onMessage:(String)->Unit) {
  LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
   item {
    Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 16.dp, top = 16.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -224,14 +224,14 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   else if (ui.home.isEmpty()) item { EmptyState(ui.error ?: "No songs yet", "Retry", onShuffle) }
   else items(ui.home.chunked(2)) { pair ->
    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-    pair.forEach { track -> Box(Modifier.weight(1f)) { SongCard(track, ui.settings.accent.toColor(), onPlay = { onPlay(track) }, onAdd = { onAdd(track) }, onLong = { onLong(track) }) } }
+    pair.forEach { track -> Box(Modifier.weight(1f)) { SongCard(track, ui.settings.accent.toColor(), onPlay = { onPlay(track) }, onAdd = { onAdd(track) }, onLong = { onLong(track) }, onDownload = { onDownload(track) }) } }
     if (pair.size == 1) Spacer(Modifier.weight(1f))
    }
   }
  }
 }
 
-@Composable private fun SongCard(track: Track, accent: Color, onPlay:()->Unit, onAdd:()->Unit, onLong:()->Unit) {
+@Composable private fun SongCard(track: Track, accent: Color, onPlay:()->Unit, onAdd:()->Unit, onLong:()->Unit, onDownload:()->Unit) {
  Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(23.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(12.dp)) {
   Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(17.dp)).background(VirexControl)) {
    AsyncImage(track.artworkUrl, null, Modifier.fillMaxSize())
@@ -240,7 +240,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   Spacer(Modifier.height(12.dp))
   Text(track.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
   Text(track.artist, fontSize = 14.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 5.dp))
-  Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.End) { Icon(Icons.Default.Download, "Download available in song actions", tint = accent, modifier = Modifier.size(22.dp)) }
+  Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) { IconButton(onClick = onDownload, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Download, "Download", tint = accent, modifier = Modifier.size(22.dp)) } }
  }
 }
 
