@@ -415,7 +415,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }, confirmButton = { TextButton(enabled = !busy && songs.lines().any { it.isNotBlank() }, onClick = { onImport(name.ifBlank { "Imported Playlist" }, songs.lines()) }) { Text(if (busy) "Importing…" else "Import", color = VirexGreen) } }, dismissButton = { TextButton(enabled = !busy, onClick = close) { Text("Cancel", color = VirexMuted) } })
 }
 @Composable private fun PlaylistDetailDialog(playlist: Playlist, ui: com.virex.music.feature.UiState, vm: VirexViewModel, close:()->Unit, play:(Track)->Unit, message:(String)->Unit) {
- val tracks = playlist.trackIds.mapNotNull { id -> ui.home.firstOrNull { it.id == id } ?: ui.results.firstOrNull { it.id == id } ?: ui.downloads.firstOrNull { it.id == id } }
+ val tracks = playlist.trackIds.mapNotNull { id -> ui.cachedTracks.firstOrNull { it.id == id } ?: ui.home.firstOrNull { it.id == id } ?: ui.results.firstOrNull { it.id == id } ?: ui.downloads.firstOrNull { it.id == id } }
  AlertDialog(onDismissRequest = close, containerColor = Color(0xFF151515), title = { Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = close) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold) } }, text = {
   Column {
    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { tracks.firstOrNull()?.let(play) }, colors = ButtonDefaults.buttonColors(containerColor = VirexGreen, contentColor = Color.Black)) { Icon(Icons.Default.PlayArrow, null); Text("Play all") }; Text("${playlist.trackIds.size} songs", color = VirexMuted, modifier = Modifier.align(Alignment.CenterVertically)) }
