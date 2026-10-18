@@ -1,4 +1,4 @@
-package in.virex.music.player
+package com.virex.music.player
 
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C

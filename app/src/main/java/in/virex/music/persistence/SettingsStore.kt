@@ -1,4 +1,4 @@
-package in.virex.music.persistence
+package com.virex.music.persistence
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

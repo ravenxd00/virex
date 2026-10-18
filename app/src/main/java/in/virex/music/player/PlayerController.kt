@@ -1,4 +1,4 @@
-package in.virex.music.player
+package com.virex.music.player
 
 import android.content.ComponentName
 import android.content.Context
@@ -9,10 +9,10 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
-import in.virex.music.domain.model.PlaybackContext
-import in.virex.music.domain.model.PlayerSnapshot
-import in.virex.music.domain.model.RepeatMode
-import in.virex.music.domain.model.Track
+import com.virex.music.domain.model.PlaybackContext
+import com.virex.music.domain.model.PlayerSnapshot
+import com.virex.music.domain.model.RepeatMode
+import com.virex.music.domain.model.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

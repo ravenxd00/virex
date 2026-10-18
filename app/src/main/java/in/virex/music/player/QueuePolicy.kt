@@ -1,6 +1,6 @@
-package in.virex.music.player
+package com.virex.music.player
 
-import in.virex.music.domain.model.Track
+import com.virex.music.domain.model.Track
 
 object QueuePolicy {
  fun distinctQueue(seed: Track, candidates: List<Track>, maxSameArtistInRow: Int = 2): List<Track> {

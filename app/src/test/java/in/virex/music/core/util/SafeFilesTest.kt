@@ -1,4 +1,4 @@
-package in.virex.music.core.util
+package com.virex.music.core.util
 
 import org.junit.Assert.*
 import org.junit.Test
