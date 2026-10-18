@@ -28,7 +28,10 @@ data class UiState(
  val settings: AppSettings = AppSettings(),
  val busy: Boolean = false,
  val downloadingId: String? = null,
- val error: String? = null
+ val error: String? = null,
+ val importProgress: Int = 0,
+ val importMatched: Int = 0,
+ val importBusy: Boolean = false
 )
 class VirexViewModel(application: Application) : AndroidViewModel(application) {
  private val app = application as VirexApplication
@@ -76,6 +79,7 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
   viewModelScope.launch { app.repository.savePlaylist(Playlist(UUID.randomUUID().toString(), safeName, tracks.map { it.id }.distinct())) }
  }
  fun deletePlaylist(id: String) { viewModelScope.launch { app.repository.deletePlaylist(id) } }
+ fun replacePlaylists(items: List<Playlist>) { viewModelScope.launch { val old = _ui.value.playlists; items.forEach { app.repository.savePlaylist(it) }; old.filter { previous -> items.none { it.id == previous.id } }.forEach { app.repository.deletePlaylist(it.id) } } }
  fun addTrackToPlaylist(playlistId: String, track: Track) {
   viewModelScope.launch {
    val p = _ui.value.playlists.firstOrNull { it.id == playlistId } ?: return@launch
@@ -97,4 +101,24 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
  fun updateSettings(transform: (AppSettings) -> AppSettings) { viewModelScope.launch { app.settings.update(transform) } }
  fun trackById(id: String): Track? = _ui.value.downloads.firstOrNull { it.id == id } ?: _ui.value.home.firstOrNull { it.id == id } ?: _ui.value.results.firstOrNull { it.id == id }
  fun importPlaylist(name: String, tracks: List<Track>) = createPlaylist(name, tracks)
+ fun importPlaylistFromNames(name: String, rawLines: List<String>) {
+  val lines = rawLines.map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase() }
+  viewModelScope.launch {
+   _ui.value = _ui.value.copy(importBusy = true, importProgress = 0, importMatched = 0, error = null)
+   val matched = mutableListOf<Track>()
+   try {
+    lines.chunked(5).forEachIndexed { index, batch ->
+     val batchResults = kotlinx.coroutines.coroutineScope {
+      batch.map { query -> kotlinx.coroutines.async { app.repository.search(query, _ui.value.settings.highQuality).getOrDefault(emptyList()).firstOrNull() } }.map { it.await() }
+     }
+     matched += batchResults.filterNotNull()
+     _ui.value = _ui.value.copy(importProgress = (((index + 1) * 5).coerceAtMost(lines.size) * 100 / lines.size.coerceAtLeast(1)), importMatched = matched.distinctBy { it.id }.size)
+    }
+    val unique = matched.distinctBy { it.id }
+    app.repository.savePlaylist(Playlist(UUID.randomUUID().toString(), name.trim().ifBlank { "Imported Playlist" }, unique.map { it.id }))
+    _ui.value = _ui.value.copy(importProgress = 100, importMatched = unique.size, error = if (unique.isEmpty()) "No tracks matched; an empty playlist was created." else "Imported " + unique.size + " tracks.")
+   } catch (e: Exception) { _ui.value = _ui.value.copy(error = e.message ?: "Import failed.") }
+   finally { _ui.value = _ui.value.copy(importBusy = false) }
+  }
+ }
 }
