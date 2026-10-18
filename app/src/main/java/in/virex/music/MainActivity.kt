@@ -176,7 +176,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
      PlaylistsScreen(ui.playlists, vm, { createPlaylist = true }, { importPlaylist = true }, { playlistDetail = it })
     }
     composable("downloads") {
-     DownloadsScreen(ui.downloads, { track -> app.playerController.play(track, ui.downloads, PlaybackContext.DOWNLOADS); playerOpen = true }, { snackbar = it })
+     DownloadsScreen(ui.downloads, { track -> app.playerController.play(track, ui.downloads, PlaybackContext.DOWNLOADS); playerOpen = true }, { snackbar = it }, { vm.clearDownloads(); snackbar = "Downloads cleared" })
     }
    }
    if (playerOpen && player.current != null) PlayerScreen(player, ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
@@ -286,7 +286,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }
 }
 
-@Composable private fun DownloadsScreen(downloads: List<Track>, onPlay:(Track)->Unit, onMessage:(String)->Unit) {
+@Composable private fun DownloadsScreen(downloads: List<Track>, onPlay:(Track)->Unit, onMessage:(String)->Unit, onClear:()->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
   Text("Downloads", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 18.dp))
   Text("Saved on this device · works offline", color = VirexMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 18.dp))
