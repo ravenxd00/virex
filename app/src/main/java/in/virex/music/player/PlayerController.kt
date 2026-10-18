@@ -32,6 +32,7 @@ class PlayerController(context: Context) {
  private val _state = MutableStateFlow(PlayerSnapshot())
  val state: StateFlow<PlayerSnapshot> = _state.asStateFlow()
  private var playbackContext = PlaybackContext.RADIO
+ private val knownTracks = linkedMapOf<String, Track>()
  private var pendingStart: Triple<Track, List<Track>, PlaybackContext>? = null
  private val pendingAppend = mutableListOf<Track>()
  private val listener = object : Player.Listener {
@@ -50,6 +51,8 @@ class PlayerController(context: Context) {
  fun play(track: Track, queue: List<Track>, context: PlaybackContext = PlaybackContext.RADIO) {
   val c = controller ?: run { pendingStart = Triple(track, queue, context); return }
   val items = (queue.ifEmpty { listOf(track) }).distinctBy { it.id }
+  items.forEach { knownTracks[it.id] = it }
+  knownTracks[track.id] = track
   val index = items.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
   playbackContext = context
   c.setMediaItems(items.map { it.toMediaItem() }, index, 0L)
@@ -71,7 +74,7 @@ class PlayerController(context: Context) {
  fun append(tracks: List<Track>) {
   val c = controller ?: run { pendingAppend += tracks; return }
   val known = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }.toSet()
-  tracks.filter { it.id !in known }.forEach { c.addMediaItem(it.toMediaItem()) }
+  tracks.filter { it.id !in known }.forEach { knownTracks[it.id] = it; c.addMediaItem(it.toMediaItem()) }
   publish()
  }
  fun close() {
@@ -83,8 +86,12 @@ class PlayerController(context: Context) {
  private fun publish() {
   val c = controller ?: return
   val index = c.currentMediaItemIndex.coerceAtLeast(0)
-  val items = (0 until c.mediaItemCount).mapNotNull { i -> c.getMediaItemAt(i).localConfiguration?.tag as? Track }
-  val current = c.currentMediaItem?.localConfiguration?.tag as? Track
+  val items = (0 until c.mediaItemCount).mapNotNull { i ->
+   val media = c.getMediaItemAt(i)
+   (media.localConfiguration?.tag as? Track) ?: knownTracks[media.mediaId]
+  }
+  val currentMedia = c.currentMediaItem
+  val current = (currentMedia?.localConfiguration?.tag as? Track) ?: currentMedia?.let { knownTracks[it.mediaId] }
   _state.value = PlayerSnapshot(current, items, index, c.isPlaying, c.currentPosition.coerceAtLeast(0), c.duration.takeIf { it > 0 } ?: 0L, c.shuffleModeEnabled, when (c.repeatMode) { Player.REPEAT_MODE_ALL -> RepeatMode.ALL; Player.REPEAT_MODE_ONE -> RepeatMode.ONE; else -> RepeatMode.OFF }, playbackContext)
  }
  private fun Track.toMediaItem(): MediaItem {
