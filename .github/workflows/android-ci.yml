@@ -5,6 +5,9 @@ on:
   pull_request:
     branches: [native-v2]
   workflow_dispatch:
+concurrency:
+  group: virex-android-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
