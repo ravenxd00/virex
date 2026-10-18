@@ -234,14 +234,14 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 }
 
 @Composable private fun SongCard(track: Track, accent: Color, onPlay:()->Unit, onAdd:()->Unit, onLong:()->Unit, onDownload:()->Unit) {
- Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(23.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(12.dp)) {
-  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(17.dp)).background(VirexControl)) {
+ Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(10.dp)) {
+  Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp)).background(VirexControl)) {
    AsyncImage(track.artworkUrl, null, Modifier.fillMaxSize())
-   IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(43.dp).background(Color.Black.copy(alpha = .66f), CircleShape)) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.White, modifier = Modifier.size(27.dp)) }
+   IconButton(onClick = onAdd, modifier = Modifier.align(Alignment.TopEnd).padding(5.dp).size(36.dp).clip(CircleShape).background(Color.Black.copy(alpha = .68f))) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.White, modifier = Modifier.size(27.dp)) }
   }
-  Spacer(Modifier.height(12.dp))
-  Text(track.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-  Text(track.artist, fontSize = 14.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 5.dp))
+  Spacer(Modifier.height(9.dp))
+  Text(track.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  Text(track.artist, fontSize = 12.sp, color = VirexMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 5.dp))
   Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) { IconButton(onClick = onDownload, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Download, "Download", tint = accent, modifier = Modifier.size(22.dp)) } }
  }
 }
@@ -249,7 +249,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 @Composable private fun SearchScreen(ui: com.virex.music.feature.UiState, vm: VirexViewModel, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
   Text("Search", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 16.dp, bottom = 15.dp))
-  Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(VirexControl).padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+  Row(Modifier.fillMaxWidth().clip(CircleShape).background(VirexControl).padding(horizontal = 16.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
    Icon(Icons.Default.Search, null, tint = VirexMuted)
    Spacer(Modifier.width(10.dp))
    Box(Modifier.weight(1f)) {
@@ -272,8 +272,8 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 }
 
 @Composable private fun ResultRow(track: Track, accent: Color, onPlay:()->Unit, onAdd:()->Unit, onLong:()->Unit) {
- Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
-  AsyncImage(track.artworkUrl, null, Modifier.size(60.dp).clip(RoundedCornerShape(10.dp)))
+ Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(VirexCard).combinedClickable(onClick = onPlay, onLongClick = onLong).padding(9.dp), verticalAlignment = Alignment.CenterVertically) {
+  AsyncImage(track.artworkUrl, null, Modifier.size(60.dp).clip(RoundedCornerShape(12.dp)))
   Spacer(Modifier.width(12.dp))
   Column(Modifier.weight(1f)) { Text(track.title, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(track.artist, color = VirexMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
   IconButton(onClick = onAdd) { Icon(Icons.Default.Add, null, tint = accent) }
