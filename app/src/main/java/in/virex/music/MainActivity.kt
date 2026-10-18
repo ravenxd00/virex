@@ -184,7 +184,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    if (playerOpen && (player.current != null || selectedTrack != null)) PlayerScreen(player.copy(current = player.current ?: selectedTrack), ui.settings, { playerOpen = false }, { app.playerController.toggle() }, app.playerController::next, app.playerController::previous, app.playerController::seek, app.playerController::setShuffle, app.playerController::cycleRepeat, { index -> app.playerController.playQueueIndex(index) }, { track -> addToPlaylistTrack = track }, { track -> vm.download(track); snackbar = "Download queued" }, { track -> shareTrack(context, track) })
   }
  }
- if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings, { backupLauncher.launch("VirexDL-backup.json") }, { restoreLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) })
+ if (showSettings) SettingsDialog(ui.settings, { showSettings = false }, vm::updateSettings)
  if (showTrackActions && selectedTrack != null) TrackActionsDialog(selectedTrack!!, { showTrackActions = false }, { addToPlaylistTrack = selectedTrack; showTrackActions = false }, { vm.download(selectedTrack!!); snackbar = "Download started"; showTrackActions = false }, { shareTrack(context, selectedTrack!!); showTrackActions = false })
  if (addToPlaylistTrack != null) AddToPlaylistDialog(ui.playlists, { addToPlaylistTrack = null }, { playlist ->
   vm.addTrackToPlaylist(playlist.id, addToPlaylistTrack!!); snackbar = "Added to ${playlist.name}"; addToPlaylistTrack = null
@@ -380,7 +380,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   }
  }
 }
-@Composable private fun SettingsDialog(settings: AppSettings, onClose:()->Unit, update:((AppSettings)->AppSettings)->Unit, onBackup:()->Unit, onRestore:()->Unit) {
+@Composable private fun SettingsDialog(settings: AppSettings, onClose:()->Unit, update:((AppSettings)->AppSettings)->Unit) {
  AlertDialog(onDismissRequest = onClose, containerColor = Color(0xFF151515), title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) }, text = {
   Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
    Text("Accent colour", color = VirexMuted, fontSize = 12.sp)
@@ -390,7 +390,6 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
    SettingRow("Audio Visualizer", "Animated player visualizer", settings.visualizer) { v -> update { it.copy(visualizer = v) } }
    SettingRow("High Quality", "Prefer 320kbps when available", settings.highQuality) { v -> update { it.copy(highQuality = v) } }
    SettingRow("Crossfade", "Smooth 3s blend between tracks", settings.crossfade) { v -> update { it.copy(crossfade = v) } }
-   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(onClick = onBackup, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f)) { Text("Backup", color = Color.White) }; OutlinedButton(onClick = onRestore, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f)) { Text("Restore", color = Color.White) } }
   }
  }, confirmButton = { TextButton(onClick = onClose) { Text("Done", color = VirexGreen) } })
 }
