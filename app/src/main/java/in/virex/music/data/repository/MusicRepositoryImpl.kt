@@ -37,7 +37,7 @@ class MusicRepositoryImpl(
 ) : MusicRepository {
  override suspend fun search(query: String, highQuality: Boolean): Result<List<Track>> = runCatching {
   require(query.isNotBlank()) { "Enter a song, artist, or album to search." }
-  val tracks = mapTracks(musicApi.search(query.trim(), 20), highQuality); trackDao.upsertAll(tracks.map { it.entity() }); tracks
+  val tracks = mapTracks(musicApi.search(query.trim(), 20), highQuality); cacheTracks(tracks); tracks
  }
  override suspend fun category(category: String, highQuality: Boolean): Result<List<Track>> {
   val query = when(category.lowercase(Locale.ROOT)) {
@@ -95,6 +95,7 @@ class MusicRepositoryImpl(
  override suspend fun getTrack(id: String): Track? = trackDao.get(id)?.model()
 
  private fun mapTracks(root: JsonObject, highQuality: Boolean): List<Track> = SongJsonMapper.mapTracks(root, highQuality)
+ private suspend fun cacheTracks(tracks: List<Track>) { val safe = tracks.map { fresh -> val old = trackDao.get(fresh.id); if (old?.localPath != null) fresh.copy(localPath = old.localPath, fileSize = old.fileSize, savedAt = old.savedAt, mimeType = old.mimeType) else fresh }; trackDao.upsertAll(safe.map { it.entity() }) }
  private fun parseLrc(raw: String): List<LyricsLine> {
   val regex = Regex("""\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?](.*)""")
   return raw.lines().mapNotNull { line ->
