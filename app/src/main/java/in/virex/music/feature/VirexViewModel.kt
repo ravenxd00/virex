@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import in.virex.music.VirexApplication
 import in.virex.music.domain.model.Playlist
+import in.virex.music.domain.model.PlaylistImportPolicy
 import in.virex.music.domain.model.Track
 import in.virex.music.downloads.DownloadScheduler
 import in.virex.music.persistence.AppSettings
@@ -104,7 +105,7 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
  fun trackById(id: String): Track? = _ui.value.downloads.firstOrNull { it.id == id } ?: _ui.value.home.firstOrNull { it.id == id } ?: _ui.value.results.firstOrNull { it.id == id }
  fun importPlaylist(name: String, tracks: List<Track>) = createPlaylist(name, tracks)
  fun importPlaylistFromNames(name: String, rawLines: List<String>) {
-  val lines = rawLines.map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase() }
+  val lines = PlaylistImportPolicy.uniqueQueries(rawLines)
   viewModelScope.launch {
    _ui.value = _ui.value.copy(importBusy = true, importProgress = 0, importMatched = 0, error = null)
    val matched = mutableListOf<Track>()
@@ -114,9 +115,9 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
       batch.map { query -> async { app.repository.search(query, _ui.value.settings.highQuality).getOrDefault(emptyList()).firstOrNull() } }.map { it.await() }
      }
      matched += batchResults.filterNotNull()
-     _ui.value = _ui.value.copy(importProgress = (((index + 1) * 5).coerceAtMost(lines.size) * 100 / lines.size.coerceAtLeast(1)), importMatched = matched.distinctBy { it.id }.size)
+     _ui.value = _ui.value.copy(importProgress = (((index + 1) * 5).coerceAtMost(lines.size) * 100 / lines.size.coerceAtLeast(1)), importMatched = PlaylistImportPolicy.uniqueTracks(matched).size)
     }
-    val unique = matched.distinctBy { it.id }
+    val unique = PlaylistImportPolicy.uniqueTracks(matched)
     app.repository.savePlaylist(Playlist(UUID.randomUUID().toString(), name.trim().ifBlank { "Imported Playlist" }, unique.map { it.id }))
     _ui.value = _ui.value.copy(importProgress = 100, importMatched = unique.size, error = if (unique.isEmpty()) "No tracks matched; an empty playlist was created." else "Imported " + unique.size + " tracks.")
    } catch (e: Exception) { _ui.value = _ui.value.copy(error = e.message ?: "Import failed.") }
