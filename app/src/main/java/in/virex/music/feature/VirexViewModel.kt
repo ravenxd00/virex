@@ -27,6 +27,7 @@ data class UiState(
  val results: List<Track> = emptyList(),
  val history: List<String> = emptyList(),
  val downloads: List<Track> = emptyList(),
+ val cachedTracks: List<Track> = emptyList(),
  val playlists: List<Playlist> = emptyList(),
  val settings: AppSettings = AppSettings(),
  val busy: Boolean = false,
@@ -43,6 +44,7 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
  val ui: StateFlow<UiState> = _ui.asStateFlow()
  private var searchJob: Job? = null
  init {
+  viewModelScope.launch { app.repository.observeCachedTracks().collectLatest { _ui.value = _ui.value.copy(cachedTracks = it) } }
   viewModelScope.launch { app.repository.observeDownloads().collectLatest { _ui.value = _ui.value.copy(downloads = it) } }
   viewModelScope.launch { app.repository.observePlaylists().collectLatest { _ui.value = _ui.value.copy(playlists = it) } }
   viewModelScope.launch { app.settings.settings.collectLatest { _ui.value = _ui.value.copy(settings = it) } }
