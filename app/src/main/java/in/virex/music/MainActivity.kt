@@ -290,7 +290,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
   Text("Downloads", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 18.dp))
   Text("Saved on this device · works offline", color = VirexMuted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp, bottom = 18.dp))
-  Text("${downloads.size} songs · ${formatBytes(downloads.sumOf { it.fileSize })}", color = VirexMuted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
+  Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("${downloads.size} songs · ${formatBytes(downloads.sumOf { it.fileSize })}", color = VirexMuted, fontSize = 12.sp, modifier = Modifier.weight(1f)); if (downloads.isNotEmpty()) TextButton(onClick = onClear) { Text("Clear all", color = VirexGreen) } }
   if (downloads.isEmpty()) EmptyState("No downloads yet.", "Browse Home", { onMessage("Choose a song and use Download to save it offline.") })
   else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(downloads, key = { it.id }) { t -> ResultRow(t, VirexGreen, { onPlay(t) }, { onMessage("Already saved for offline listening") }, { onMessage("Offline file: ${t.localPath.orEmpty()}") }) } }
  }
