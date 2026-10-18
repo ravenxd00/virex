@@ -7,6 +7,7 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 @Dao interface TrackDao {
+ @Query("SELECT * FROM tracks ORDER BY savedAt DESC") fun observeCachedTracks(): Flow<List<TrackEntity>>
  @Query("SELECT * FROM tracks WHERE localPath IS NOT NULL ORDER BY savedAt DESC") fun observeDownloads(): Flow<List<TrackEntity>>
  @Query("SELECT * FROM tracks WHERE id = :id LIMIT 1") suspend fun get(id: String): TrackEntity?
  @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(track: TrackEntity)
