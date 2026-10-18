@@ -35,6 +35,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArrowBack
@@ -337,32 +340,70 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  var seek by remember(track.id) { mutableFloatStateOf(0f) }
  val accent = settings.accent.toColor()
  Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-  Column(Modifier.fillMaxSize().background(VirexBlack).statusBarsPadding().navigationBarsPadding().padding(horizontal = 22.dp)) {
-   Row(Modifier.fillMaxWidth().height(54.dp).pointerInput(Unit) { var dx = 0f; var dy = 0f; detectDragGestures(onDrag = { _, amount -> dx += amount.x; dy += amount.y }, onDragEnd = { if (dy > 45f) onClose() else if (dx < -65f) onNext() else if (dx > 65f) onPrevious(); dx = 0f; dy = 0f }) }, verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = onClose) { Icon(Icons.Default.ArrowBack, "Close player", tint = Color.White) }; Spacer(Modifier.weight(1f)); Text(when(state.context){PlaybackContext.RADIO->"VIREX RADIO";PlaybackContext.SEARCH->"SEARCH RESULTS";PlaybackContext.PLAYLIST->"PLAYLIST";PlaybackContext.DOWNLOADS->"OFFLINE"}, color = accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp); Spacer(Modifier.weight(1f)); IconButton(onClick = { page = "Queue" }) { Icon(Icons.Default.QueueMusic, "Queue", tint = Color.White) } }
-   Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(VirexControl).padding(4.dp)) { listOf("Player","Lyrics","Queue").forEach { p -> Box(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (page == p) accent.copy(alpha = .18f) else Color.Transparent).combinedClickable(onClick = { page = p }, onLongClick = { page = p }).padding(vertical = 10.dp), contentAlignment = Alignment.Center) { Text(p, color = if (page == p) accent else VirexMuted, fontWeight = FontWeight.SemiBold) } } }
+  Column(Modifier.fillMaxSize().background(Color.Black).statusBarsPadding().navigationBarsPadding().padding(horizontal = 22.dp)) {
+   Row(Modifier.fillMaxWidth().height(64.dp).pointerInput(Unit) { var dx = 0f; var dy = 0f; detectDragGestures(onDrag = { _, amount -> dx += amount.x; dy += amount.y }, onDragEnd = { if (dy > 45f) onClose() else if (dx < -65f) onNext() else if (dx > 65f) onPrevious(); dx = 0f; dy = 0f }) }, verticalAlignment = Alignment.CenterVertically) {
+    IconButton(onClick = onClose, modifier = Modifier.size(42.dp)) { Icon(Icons.Default.KeyboardArrowDown, "Close player", tint = Color.White, modifier = Modifier.size(34.dp)) }
+    Spacer(Modifier.weight(1f))
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+     Text(if (page == "Lyrics") "LYRICS" else if (page == "Queue") "QUEUE" else "NOW PLAYING", color = Color(0xFFA6A6B0), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+     Text("Virex Radio", color = accent, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+    }
+    Spacer(Modifier.weight(1f))
+    IconButton(onClick = { onAdd(track) }, modifier = Modifier.size(42.dp).clip(RoundedCornerShape(5.dp)).background(Color.White)) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.Black, modifier = Modifier.size(24.dp)) }
+   }
    when (page) {
-    "Queue" -> LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { items(state.queue) { t -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (t.id == track.id) accent.copy(alpha = .12f) else VirexCard).combinedClickable(onClick = { onQueue(state.queue.indexOf(t)); page = "Player" }, onLongClick = { onQueue(state.queue.indexOf(t)); page = "Player" }).padding(10.dp), verticalAlignment = Alignment.CenterVertically) { AsyncImage(t.artworkUrl, null, Modifier.size(45.dp).clip(RoundedCornerShape(8.dp))); Spacer(Modifier.width(10.dp)); Column(Modifier.weight(1f)) { Text(t.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(t.artist, color = VirexMuted, fontSize = 12.sp) }; if (t.id == track.id) Icon(Icons.Default.PlayArrow, null, tint = accent) } } }
+    "Queue" -> {
+     LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      if (state.queue.isEmpty()) item { Box(Modifier.fillMaxWidth().padding(top = 90.dp), contentAlignment = Alignment.Center) { Text("Your queue is empty", color = VirexMuted, fontSize = 14.sp) } }
+      items(state.queue, key = { it.id }) { t -> Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if (t.id == track.id) accent.copy(alpha = .13f) else Color(0xFF151515)).combinedClickable(onClick = { onQueue(state.queue.indexOf(t)); page = "Player" }, onLongClick = { onQueue(state.queue.indexOf(t)); page = "Player" }).padding(10.dp), verticalAlignment = Alignment.CenterVertically) { AsyncImage(t.artworkUrl, null, Modifier.size(48.dp).clip(RoundedCornerShape(9.dp))); Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) { Text(t.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(t.artist, color = VirexMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }; if (t.id == track.id) Icon(Icons.Default.PlayArrow, null, tint = accent) } }
+     }
+     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) { OutlinedButton(onClick = { page = "Player" }, shape = RoundedCornerShape(50), modifier = Modifier.fillMaxWidth()) { Text("Back to player", fontSize = 13.sp) } }
+    }
     "Lyrics" -> LyricsPanel(track, state.positionMs, onShare)
     else -> {
-     Spacer(Modifier.weight(.5f))
-     AsyncImage(track.artworkUrl.takeIf { it.isNotBlank() }, null, Modifier.fillMaxWidth(.86f).aspectRatio(1f).clip(RoundedCornerShape(20.dp)).align(Alignment.CenterHorizontally).background(VirexCard).pointerInput(track.id) { var dx = 0f; var dy = 0f; detectDragGestures(onDrag = { _, amount -> dx += amount.x; dy += amount.y }, onDragEnd = { if (dy > 65f) onClose() else if (dx < -65f) onNext() else if (dx > 65f) onPrevious(); dx = 0f; dy = 0f }) })
-     Spacer(Modifier.height(24.dp))
-     Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(track.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis); Text(track.artist, color = VirexMuted, fontSize = 14.sp, modifier = Modifier.padding(top = 3.dp), maxLines = 1, overflow = TextOverflow.Ellipsis) }; IconButton(onClick = { onAdd(track) }) { Icon(Icons.Default.Add, "Add to playlist", tint = accent) } }
-     Slider(value = if (state.durationMs > 0) state.positionMs.toFloat().div(state.durationMs).coerceIn(0f,1f) else seek, onValueChange = { seek = it }, onValueChangeFinished = { onSeek((seek * state.durationMs).toLong()) }, colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent, inactiveTrackColor = Color(0xFF333333)))
-     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(timeLabel(state.positionMs), color = VirexMuted, fontSize = 11.sp); Text(timeLabel(state.durationMs), color = VirexMuted, fontSize = 11.sp) }
-     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-      IconButton(onClick = { onShuffle(!state.shuffle) }) { Icon(Icons.Default.Shuffle, null, tint = if (state.shuffle) accent else VirexMuted) }
-      IconButton(onClick = onPrevious) { Icon(Icons.Default.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(32.dp)) }
-      FilledIconButton(onClick = onToggle, modifier = Modifier.size(60.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent, contentColor = Color.Black)) { Icon(if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, null, modifier = Modifier.size(30.dp)) }
-      IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, null, tint = Color.White, modifier = Modifier.size(32.dp)) }
-      IconButton(onClick = onRepeat) { Icon(Icons.Default.Repeat, null, tint = if (state.repeat == RepeatMode.OFF) VirexMuted else accent) }
+     Spacer(Modifier.weight(.25f))
+     AsyncImage(track.artworkUrl.takeIf { it.isNotBlank() }, null, Modifier.fillMaxWidth(.78f).widthIn(max = 460.dp).aspectRatio(1f).clip(RoundedCornerShape(22.dp)).align(Alignment.CenterHorizontally).background(Color(0xFF101414)).pointerInput(track.id) { var dx = 0f; var dy = 0f; detectDragGestures(onDrag = { _, amount -> dx += amount.x; dy += amount.y }, onDragEnd = { if (dy > 65f) onClose() else if (dx < -65f) onNext() else if (dx > 65f) onPrevious(); dx = 0f; dy = 0f }) })
+     Spacer(Modifier.height(22.dp))
+     Row(verticalAlignment = Alignment.CenterVertically) {
+      Column(Modifier.weight(1f)) {
+       Text(track.title, color = Color.White, fontSize = 29.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+       Text(track.artist, color = Color(0xFFA3A3AD), fontSize = 17.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+      IconButton(onClick = { onAdd(track) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Add, "Add to playlist", tint = Color.White, modifier = Modifier.size(23.dp)) }
      }
-     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { OutlinedButton(onClick = { onDownload(track) }, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Download, null, tint = accent); Text("Download", color = Color.White) }; OutlinedButton(onClick = { onShare(track) }, shape = RoundedCornerShape(50), modifier = Modifier.weight(1f), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF333333))) { Icon(Icons.Default.Share, null, tint = accent); Text("Share", color = Color.White) } }
-     if (settings.visualizer) Visualizer(accent, state.isPlaying)
-     Spacer(Modifier.weight(.35f))
+     Spacer(Modifier.height(13.dp))
+     Slider(value = if (state.durationMs > 0) state.positionMs.toFloat().div(state.durationMs).coerceIn(0f,1f) else seek, onValueChange = { seek = it }, onValueChangeFinished = { onSeek((seek * state.durationMs).toLong()) }, modifier = Modifier.height(25.dp), colors = SliderDefaults.colors(thumbColor = accent, activeTrackColor = accent, inactiveTrackColor = Color(0xFF333333)))
+     Row(Modifier.fillMaxWidth().padding(top = 1.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(timeLabel(state.positionMs), color = Color(0xFF8E8E98), fontSize = 11.sp); Text(timeLabel(state.durationMs), color = Color(0xFF8E8E98), fontSize = 11.sp) }
+     Spacer(Modifier.height(17.dp))
+     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+      IconButton(onClick = { onShuffle(!state.shuffle) }, modifier = Modifier.size(42.dp)) { Icon(Icons.Default.Shuffle, null, tint = if (state.shuffle) accent else Color(0xFF9B9BA5), modifier = Modifier.size(25.dp)) }
+      IconButton(onClick = onPrevious, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.SkipPrevious, null, tint = Color.White, modifier = Modifier.size(37.dp)) }
+      FilledIconButton(onClick = onToggle, modifier = Modifier.size(86.dp), shape = CircleShape, colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent, contentColor = Color.Black)) { Icon(if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, null, modifier = Modifier.size(43.dp)) }
+      IconButton(onClick = onNext, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.SkipNext, null, tint = Color.White, modifier = Modifier.size(37.dp)) }
+      IconButton(onClick = onRepeat, modifier = Modifier.size(42.dp)) { Icon(Icons.Default.Refresh, null, tint = if (state.repeat == RepeatMode.OFF) Color(0xFF9B9BA5) else accent, modifier = Modifier.size(28.dp)) }
+     }
+     Spacer(Modifier.height(16.dp))
+     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      PlayerAction(Icons.Default.Download, "Download", accent, Modifier.weight(1f)) { onDownload(track) }
+      PlayerAction(Icons.Default.Mic, "Lyrics", accent, Modifier.weight(1f)) { page = "Lyrics" }
+      PlayerAction(Icons.Default.QueueMusic, "Queue", accent, Modifier.weight(1f)) { page = "Queue" }
+     }
+     if (settings.visualizer) {
+      Spacer(Modifier.height(4.dp))
+      Box(Modifier.fillMaxWidth().height(42.dp), contentAlignment = Alignment.BottomCenter) { Visualizer(accent, state.isPlaying) }
+     }
+     Spacer(Modifier.weight(.2f))
     }
    }
   }
+ }
+}
+
+@Composable private fun PlayerAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, accent: Color, modifier: Modifier = Modifier, onClick:()->Unit) {
+ OutlinedButton(onClick = onClick, modifier = modifier.height(54.dp), shape = RoundedCornerShape(50), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF303030)), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFF191919), contentColor = Color.White)) {
+  Icon(icon, null, tint = accent, modifier = Modifier.size(17.dp))
+  Spacer(Modifier.width(7.dp))
+  Text(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
  }
 }
 
@@ -376,12 +417,31 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  val activeIndex = lines.indexOfLast { it.timeMs != null && it.timeMs <= positionMs }
  LaunchedEffect(track.id) { val r = app.repository.lyrics(track); lines = r.getOrNull()?.lines.orEmpty(); error = r.exceptionOrNull()?.message ?: if (lines.isEmpty()) "Lyrics are unavailable for this track." else null; busy = false }
  LaunchedEffect(activeIndex) { if (activeIndex >= 0 && lines.isNotEmpty()) listState.animateScrollToItem(activeIndex.coerceIn(0, lines.lastIndex)) }
- Column(Modifier.fillMaxSize().padding(top = 18.dp)) {
-  Row(verticalAlignment = Alignment.CenterVertically) { Text("Lyrics", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)); TextButton(onClick = { if (lines.isNotEmpty()) clipboard.setText(androidx.compose.ui.text.AnnotatedString(lines.joinToString("\n") { it.text })) }, enabled = lines.isNotEmpty()) { Text("Copy", color = VirexGreen) }; TextButton(onClick = { onShare(track) }) { Text("Share", color = VirexGreen) } }
-  when {
-   busy -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = VirexGreen) }
-   lines.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(error ?: "Instrumental or unavailable", color = VirexMuted) }
-   else -> LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 30.dp)) { itemsIndexed(lines) { index, line -> Text(line.text, color = if (index == activeIndex && line.timeMs != null) VirexGreen else Color.White.copy(alpha = .82f), fontSize = if (index == activeIndex && line.timeMs != null) 18.sp else 16.sp, fontWeight = if (index == activeIndex && line.timeMs != null) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.padding(vertical = 9.dp)) } }
+ Column(Modifier.fillMaxSize().padding(top = 14.dp, bottom = 4.dp)) {
+  Box(Modifier.fillMaxSize().clip(RoundedCornerShape(32.dp)).background(Color(0xFF090B0B)).border(1.dp, Color(0xFF252929), RoundedCornerShape(32.dp)).padding(horizontal = 18.dp)) {
+   Column(Modifier.fillMaxSize()) {
+    Row(Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
+     Icon(Icons.Default.Mic, null, tint = VirexGreen, modifier = Modifier.size(20.dp))
+     Spacer(Modifier.width(10.dp))
+     Text("Lyrics", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+     IconButton(onClick = { if (lines.isNotEmpty()) clipboard.setText(androidx.compose.ui.text.AnnotatedString(lines.joinToString("\n") { it.text })) }, enabled = lines.isNotEmpty(), modifier = Modifier.size(38.dp)) { Icon(Icons.Default.ContentCopy, "Copy lyrics", tint = VirexMuted, modifier = Modifier.size(20.dp)) }
+     IconButton(onClick = { onShare(track) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Share, "Share song", tint = VirexMuted, modifier = Modifier.size(22.dp)) }
+     IconButton(onClick = { onShare(track) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.MusicNote, "Track", tint = VirexMuted, modifier = Modifier.size(22.dp)) }
+    }
+    HorizontalDivider(color = Color(0xFF252929), thickness = 1.dp)
+    when {
+     busy -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = VirexGreen, strokeWidth = 2.dp) }
+     lines.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(error ?: "Lyrics unavailable", color = VirexMuted, fontSize = 13.sp) }
+     else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 18.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      itemsIndexed(lines) { index, line ->
+       val active = index == activeIndex && line.timeMs != null
+       Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).then(if (active) Modifier.background(Color(0xFF1C2020)).border(width = 3.dp, color = VirexGreen, shape = RoundedCornerShape(22.dp)) else Modifier).padding(horizontal = 18.dp, vertical = if (active) 19.dp else 16.dp)) {
+        Text(line.text, color = if (active) Color.White else Color(0xFF777A7D), fontSize = if (active) 23.sp else 20.sp, lineHeight = if (active) 31.sp else 28.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.SemiBold)
+       }
+      }
+     }
+    }
+   }
   }
  }
 }
