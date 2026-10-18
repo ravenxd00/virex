@@ -443,7 +443,6 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
 private fun Long.toColor(): Color = Color(this)
 private fun AppSettings.accentColor() = Color(accent)
 private fun AppSettings.accentColorLong() = accent.toColor()
-private fun Long.formatBytes(): String = formatBytes(this)
 private fun formatBytes(bytes: Long): String = when { bytes < 1024 -> "${bytes} B"; bytes < 1024*1024 -> "${bytes/1024} KB"; else -> String.format("%.1f MB", bytes / (1024.0*1024.0)) }
 private fun timeLabel(ms: Long): String = "%d:%02d".format((ms.coerceAtLeast(0)/1000)/60, (ms.coerceAtLeast(0)/1000)%60)
 private fun shareTrack(context: android.content.Context, track: Track) {
