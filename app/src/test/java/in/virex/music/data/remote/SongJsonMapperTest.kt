@@ -29,4 +29,16 @@ class SongJsonMapperTest {
   val invalid = JsonParser.parseString("""{"results":[{"name":"No ID"}]}""").asJsonObject
   assertTrue(SongJsonMapper.mapTracks(invalid).isEmpty())
  }
+
+ @Test fun mapsNestedArtistArray() {
+  val root = JsonParser.parseString("""{"data":{"results":[{"id":"2","title":"Song Two","artists":{"primary":[{"name":"Artist A"},{"name":"Artist B"}]},"duration":201}]}}""").asJsonObject
+  val track = SongJsonMapper.mapTracks(root).single()
+  assertEquals("Artist A, Artist B", track.artist)
+ }
+ @Test fun mapsArtistObjectAndFallback() {
+  val root = JsonParser.parseString("""{"results":[{"id":"4","title":"Object Artist","primaryArtists":{"name":"Artist Object"}},{"id":"5","name":"Instrumental"}]}""").asJsonObject
+  val tracks = SongJsonMapper.mapTracks(root)
+  assertEquals("Artist Object", tracks[0].artist)
+  assertTrue(tracks[1].artist.isNotBlank())
+ }
 }
