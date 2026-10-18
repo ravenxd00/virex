@@ -1,4 +1,4 @@
-package in.virex.music.data.local
+package com.virex.music.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

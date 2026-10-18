@@ -1,4 +1,4 @@
-package in.virex.music.core.util
+package com.virex.music.core.util
 
 import java.io.File
 import java.text.Normalizer

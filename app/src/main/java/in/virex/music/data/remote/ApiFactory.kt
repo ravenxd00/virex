@@ -1,6 +1,6 @@
-package in.virex.music.data.remote
+package com.virex.music.data.remote
 
-import in.virex.music.BuildConfig
+import com.virex.music.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET

@@ -1,4 +1,4 @@
-package in.virex.music.data.local
+package com.virex.music.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
