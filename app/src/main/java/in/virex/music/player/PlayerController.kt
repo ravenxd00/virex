@@ -32,6 +32,8 @@ class PlayerController(context: Context) {
  private val _state = MutableStateFlow(PlayerSnapshot())
  val state: StateFlow<PlayerSnapshot> = _state.asStateFlow()
  private var playbackContext = PlaybackContext.RADIO
+ private var pendingStart: Triple<Track, List<Track>, PlaybackContext>? = null
+ private val pendingAppend = mutableListOf<Track>()
  private val listener = object : Player.Listener {
   override fun onEvents(player: Player, events: Player.Events) { publish() }
   override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { publish() }
@@ -40,13 +42,13 @@ class PlayerController(context: Context) {
   val token = SessionToken(appContext, ComponentName(appContext, MusicService::class.java))
   controllerFuture = MediaController.Builder(appContext, token).buildAsync().also { future ->
    future.addListener({
-    runCatching { future.get() }.onSuccess { c -> controller = c; c.addListener(listener); publish() }
+    runCatching { future.get() }.onSuccess { c -> controller = c; c.addListener(listener); publish(); pendingStart?.let { pending -> pendingStart = null; play(pending.first, pending.second, pending.third) }; if (pendingAppend.isNotEmpty()) { val waiting = pendingAppend.toList(); pendingAppend.clear(); append(waiting) } }
    }, appContext.mainExecutor)
   }
   scope.launch { while (isActive) { publish(); delay(400) } }
  }
  fun play(track: Track, queue: List<Track>, context: PlaybackContext = PlaybackContext.RADIO) {
-  val c = controller ?: return
+  val c = controller ?: run { pendingStart = Triple(track, queue, context); return }
   val items = (queue.ifEmpty { listOf(track) }).distinctBy { it.id }
   val index = items.indexOfFirst { it.id == track.id }.coerceAtLeast(0)
   playbackContext = context
@@ -67,7 +69,7 @@ class PlayerController(context: Context) {
  }
  fun playQueueIndex(index: Int) { controller?.seekTo(index, 0L); controller?.play(); publish() }
  fun append(tracks: List<Track>) {
-  val c = controller ?: return
+  val c = controller ?: run { pendingAppend += tracks; return }
   val known = (0 until c.mediaItemCount).map { c.getMediaItemAt(it).mediaId }.toSet()
   tracks.filter { it.id !in known }.forEach { c.addMediaItem(it.toMediaItem()) }
   publish()
