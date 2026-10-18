@@ -1,4 +1,4 @@
-package in.virex.music.domain.model
+package com.virex.music.domain.model
 
 object RepeatModePolicy {
  fun next(mode: RepeatMode): RepeatMode = when (mode) {

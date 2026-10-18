@@ -1,9 +1,9 @@
-package in.virex.music.data.remote
+package com.virex.music.data.remote
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import in.virex.music.domain.model.Track
+import com.virex.music.domain.model.Track
 
 object SongJsonMapper {
  fun mapTracks(root: JsonObject, highQuality: Boolean = false): List<Track> {

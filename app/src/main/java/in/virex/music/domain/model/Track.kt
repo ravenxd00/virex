@@ -1,4 +1,4 @@
-package in.virex.music.domain.model
+package com.virex.music.domain.model
 
 data class Track(
  val id: String,
