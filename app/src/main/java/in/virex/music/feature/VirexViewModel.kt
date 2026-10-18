@@ -84,6 +84,7 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
   viewModelScope.launch { app.repository.savePlaylist(Playlist(UUID.randomUUID().toString(), safeName, tracks.map { it.id }.distinct())) }
  }
  fun deletePlaylist(id: String) { viewModelScope.launch { app.repository.deletePlaylist(id) } }
+ fun clearDownloads() { viewModelScope.launch { app.repository.clearDownloads() } }
  fun replacePlaylists(items: List<Playlist>) { viewModelScope.launch { val old = _ui.value.playlists; items.forEach { app.repository.savePlaylist(it) }; old.filter { previous -> items.none { it.id == previous.id } }.forEach { app.repository.deletePlaylist(it.id) } } }
  fun addTrackToPlaylist(playlistId: String, track: Track) {
   viewModelScope.launch {
