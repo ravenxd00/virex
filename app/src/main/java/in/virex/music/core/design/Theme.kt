@@ -1,4 +1,4 @@
-package in.virex.music.core.design
+package com.virex.music.core.design
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme

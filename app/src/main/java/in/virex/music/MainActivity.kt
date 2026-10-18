@@ -1,6 +1,6 @@
 @file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 
-package in.virex.music
+package com.virex.music
 
 import android.Manifest
 import android.content.Intent
@@ -73,13 +73,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import in.virex.music.core.design.*
-import in.virex.music.domain.model.*
-import in.virex.music.feature.VirexViewModel
-import in.virex.music.player.QueuePolicy
-import in.virex.music.persistence.AppSettings
-import in.virex.music.persistence.BackupDocument
-import in.virex.music.persistence.BackupManager
+import com.virex.music.core.design.*
+import com.virex.music.domain.model.*
+import com.virex.music.feature.VirexViewModel
+import com.virex.music.player.QueuePolicy
+import com.virex.music.persistence.AppSettings
+import com.virex.music.persistence.BackupDocument
+import com.virex.music.persistence.BackupManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -192,7 +192,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  if (playlistDetail != null) PlaylistDetailDialog(playlistDetail!!, ui, vm, { playlistDetail = null }, { track -> app.playerController.play(track, ui.home, PlaybackContext.PLAYLIST); playerOpen = true }, { snackbar = it })
 }
 
-@Composable private fun HomeScreen(ui: in.virex.music.feature.UiState, onCategory: (String)->Unit, onShuffle: ()->Unit, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit, onSettings:()->Unit, onMessage:(String)->Unit) {
+@Composable private fun HomeScreen(ui: com.virex.music.feature.UiState, onCategory: (String)->Unit, onShuffle: ()->Unit, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit, onSettings:()->Unit, onMessage:(String)->Unit) {
  LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
   item {
    Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 16.dp, top = 16.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -244,7 +244,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
  }
 }
 
-@Composable private fun SearchScreen(ui: in.virex.music.feature.UiState, vm: VirexViewModel, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit) {
+@Composable private fun SearchScreen(ui: com.virex.music.feature.UiState, vm: VirexViewModel, onPlay:(Track)->Unit, onAdd:(Track)->Unit, onLong:(Track)->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
   Text("Search", fontSize = 29.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(top = 16.dp, bottom = 15.dp))
   Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(VirexControl).padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -414,7 +414,7 @@ private fun VirexRoot(vm: VirexViewModel = viewModel()) {
   }
  }, confirmButton = { TextButton(enabled = !busy && songs.lines().any { it.isNotBlank() }, onClick = { onImport(name.ifBlank { "Imported Playlist" }, songs.lines()) }) { Text(if (busy) "Importing…" else "Import", color = VirexGreen) } }, dismissButton = { TextButton(enabled = !busy, onClick = close) { Text("Cancel", color = VirexMuted) } })
 }
-@Composable private fun PlaylistDetailDialog(playlist: Playlist, ui: in.virex.music.feature.UiState, vm: VirexViewModel, close:()->Unit, play:(Track)->Unit, message:(String)->Unit) {
+@Composable private fun PlaylistDetailDialog(playlist: Playlist, ui: com.virex.music.feature.UiState, vm: VirexViewModel, close:()->Unit, play:(Track)->Unit, message:(String)->Unit) {
  val tracks = playlist.trackIds.mapNotNull { id -> ui.home.firstOrNull { it.id == id } ?: ui.results.firstOrNull { it.id == id } ?: ui.downloads.firstOrNull { it.id == id } }
  AlertDialog(onDismissRequest = close, containerColor = Color(0xFF151515), title = { Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = close) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text(playlist.name, color = Color.White, fontWeight = FontWeight.Bold) } }, text = {
   Column {

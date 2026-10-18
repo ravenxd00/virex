@@ -1,12 +1,12 @@
-package in.virex.music
+package com.virex.music
 
 import android.app.Application
 import androidx.room.Room
-import in.virex.music.data.local.VirexDatabase
-import in.virex.music.data.remote.ApiFactory
-import in.virex.music.data.repository.MusicRepositoryImpl
-import in.virex.music.persistence.SettingsStore
-import in.virex.music.player.PlayerController
+import com.virex.music.data.local.VirexDatabase
+import com.virex.music.data.remote.ApiFactory
+import com.virex.music.data.repository.MusicRepositoryImpl
+import com.virex.music.persistence.SettingsStore
+import com.virex.music.player.PlayerController
 
 class VirexApplication : Application() {
  lateinit var database: VirexDatabase

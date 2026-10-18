@@ -5,10 +5,10 @@ plugins {
  id("com.google.devtools.ksp")
 }
 android {
- namespace = "in.virex.music"
+ namespace = "com.virex.music"
  compileSdk = 35
  defaultConfig {
-  applicationId = "in.virex.music"
+  applicationId = "com.virex.music"
   minSdk = 26
   targetSdk = 35
   versionCode = 1

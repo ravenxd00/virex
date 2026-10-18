@@ -1,4 +1,4 @@
-package in.virex.music
+package com.virex.music
 
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
