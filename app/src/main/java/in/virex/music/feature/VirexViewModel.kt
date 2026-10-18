@@ -9,6 +9,8 @@ import in.virex.music.domain.model.Track
 import in.virex.music.downloads.DownloadScheduler
 import in.virex.music.persistence.AppSettings
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -108,8 +110,8 @@ class VirexViewModel(application: Application) : AndroidViewModel(application) {
    val matched = mutableListOf<Track>()
    try {
     lines.chunked(5).forEachIndexed { index, batch ->
-     val batchResults = kotlinx.coroutines.coroutineScope {
-      batch.map { query -> kotlinx.coroutines.async { app.repository.search(query, _ui.value.settings.highQuality).getOrDefault(emptyList()).firstOrNull() } }.map { it.await() }
+     val batchResults = coroutineScope {
+      batch.map { query -> async { app.repository.search(query, _ui.value.settings.highQuality).getOrDefault(emptyList()).firstOrNull() } }.map { it.await() }
      }
      matched += batchResults.filterNotNull()
      _ui.value = _ui.value.copy(importProgress = (((index + 1) * 5).coerceAtMost(lines.size) * 100 / lines.size.coerceAtLeast(1)), importMatched = matched.distinctBy { it.id }.size)
