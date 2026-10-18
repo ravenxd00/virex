@@ -20,7 +20,7 @@ class SettingsStore(private val context: Context) {
  private val highQualityKey = booleanPreferencesKey("high_quality")
  private val crossfadeKey = booleanPreferencesKey("crossfade")
  val settings = context.settingsDataStore.data.map { p ->
-  AppSettings((p[accentKey] ?: 0x1DB954).toLong() or 0xFF000000, p[visualizer] ?: true, p[highQualityKey] ?: false, p[crossfadeKey] ?: false)
+  AppSettings((p[accentKey] ?: 0x1DB954).toLong() or 0xFF000000, p[visualizerKey] ?: true, p[highQualityKey] ?: false, p[crossfadeKey] ?: false)
  }
  suspend fun update(transform: (AppSettings) -> AppSettings) {
   context.settingsDataStore.edit { p ->
