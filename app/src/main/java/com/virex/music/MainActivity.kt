@@ -217,7 +217,7 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
  var panel by remember(song.id){mutableStateOf("Player")}
  var lyrics by remember(song.id){mutableStateOf<LyricsResult?>(null)}
  var lyricsLoading by remember(song.id){mutableStateOf(false)}
- LaunchedEffect(song.id,panel){if(panel=="Lyrics"){lyricsLoading=true;lyrics=runCatching{MusicApi.lyrics(song)}.getOrNull();lyricsLoading=false}}
+ LaunchedEffect(song.id){lyricsLoading=true;lyrics=runCatching{MusicApi.lyrics(song)}.getOrNull();lyricsLoading=false}
  Column(Modifier.fillMaxSize().background(Color.Black).padding(horizontal=22.dp),horizontalAlignment=Alignment.CenterHorizontally) {
   Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick=onClose){Icon(Icons.Default.KeyboardArrowDown,null,tint=Color.White,modifier=Modifier.size(30.dp))};Spacer(Modifier.weight(1f));Column(horizontalAlignment=Alignment.CenterHorizontally){Text(if(panel=="Player")"NOW PLAYING" else panel.uppercase(),color=Grey,fontSize=10.sp,letterSpacing=1.5.sp);Text("Virex Music",color=Color.White,fontSize=12.sp)};Spacer(Modifier.weight(1f));GlassIcon(Icons.Default.FavoriteBorder,{onFavorite(song)},38)}
   when(panel){
