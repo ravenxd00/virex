@@ -64,8 +64,9 @@ object MusicApi {
             val images = o.optJSONArray("image")
             val image = largestUrl(images)
             val downloads = o.optJSONArray("downloadUrl") ?: o.optJSONArray("download_url")
-            val stream = chooseQuality(downloads)
-            Song(id, title, artist.ifBlank { "Unknown artist" }, image, stream, o.optString("duration").toIntOrNull() ?: 0)
+            val high = chooseQuality(downloads, true)
+            val low = chooseQuality(downloads, false)
+            Song(id, title, artist.ifBlank { "Unknown artist" }, image, high, high, low, o.optString("duration").toIntOrNull() ?: 0)
         }
     }
     private fun largestUrl(array: JSONArray?): String {
@@ -76,7 +77,7 @@ object MusicApi {
         }
         return values.maxByOrNull { it.second }?.first.orEmpty()
     }
-    private fun chooseQuality(array: JSONArray?): String {
+    private fun chooseQuality(array: JSONArray?, high: Boolean): String {
         if (array == null || array.length() == 0) return ""
         val options = (0 until array.length()).mapNotNull { i ->
             val item = array.optJSONObject(i) ?: return@mapNotNull null
@@ -84,7 +85,7 @@ object MusicApi {
             val q = item.optString("quality").filter { it.isDigit() }.toIntOrNull() ?: 0
             url to q
         }
-        return (if (QualityPreference.high) options.maxByOrNull { it.second } else options.minByOrNull { it.second })?.first.orEmpty()
+        return (if (high) options.maxByOrNull { it.second } else options.minByOrNull { it.second })?.first.orEmpty()
     }
     private fun parseLrc(raw: String): List<LyricLine> = raw.lines().flatMap { line ->
         val regex = Regex("\\[(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?]")
