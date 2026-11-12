@@ -168,64 +168,140 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
  }
 }
 
-@Composable private fun HomeScreen(songs:List<Song>,busy:Boolean,message:String?,artwork:String,onPlay:(Song)->Unit,onCategory:(String)->Unit,onSettings:()->Unit) {
- LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(start=18.dp,end=18.dp,top=10.dp,bottom=18.dp)) {
+@Composable
+private fun HomeScreen(
+ songs: List<Song>,
+ busy: Boolean,
+ message: String?,
+ artwork: String,
+ onPlay: (Song) -> Unit,
+ onCategory: (String) -> Unit,
+ onSettings: () -> Unit
+) {
+ LazyColumn(
+  modifier = Modifier.fillMaxSize(),
+  contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 28.dp),
+  verticalArrangement = Arrangement.spacedBy(22.dp)
+ ) {
   item {
-   Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.padding(bottom=24.dp)) {
-    Column(Modifier.weight(1f)) { Text("VIREX",color=Color.White,fontSize=22.sp,fontWeight=FontWeight.SemiBold,letterSpacing=3.sp); Text("MUSIC, IN MOTION",color=Grey,fontSize=9.sp,letterSpacing=2.sp) }
-    GlassIcon(Icons.Default.Settings,onSettings,38)
+   Row(verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.weight(1f)) {
+     Text("V I R E X", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+     Text("YOUR MUSIC. YOUR MOMENT.", color = Grey, fontSize = 9.sp, letterSpacing = 2.sp, modifier = Modifier.padding(top = 3.dp))
+    }
+    GlassIcon(Icons.Default.Settings, onSettings, 42)
    }
   }
-  item { Text("GOOD MUSIC.\nNO DISTRACTIONS.",color=Color.White,fontSize=32.sp,lineHeight=36.sp,fontWeight=FontWeight.Light,letterSpacing=(-1).sp,modifier=Modifier.padding(bottom=18.dp)) }
   item {
-   Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.padding(bottom=24.dp)) {
-    listOf("For you","Trending","Punjabi","Hip-hop","Lofi").forEachIndexed { i,label ->
-     Text(label,color=if(i==0)Color.Black else Color.White,fontSize=11.sp,modifier=Modifier.clip(CircleShape).background(if(i==0)Color.White else Color(0xFF151515)).border(1.dp,if(i==0)Color.White else Line,CircleShape).clickable{onCategory(label)}.padding(horizontal=14.dp,vertical=9.dp))
-    }
+   Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+    Text("LISTEN WITHOUT LIMITS", color = Grey, fontSize = 9.sp, letterSpacing = 2.5.sp)
+    Text("Find your\nnext favourite.", color = Color.White, fontSize = 35.sp, lineHeight = 39.sp, fontWeight = FontWeight.Light, letterSpacing = (-1.2).sp)
    }
   }
-  item { SectionHeader("IN THE SPOTLIGHT") }
-  if(songs.isNotEmpty()) item {
-   val hero=songs.first()
-   Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(22.dp)).background(Color(0xFF171717)).clickable{onPlay(hero)}) {
-    AsyncImage(hero.artwork.ifBlank{null},null,Modifier.fillMaxSize(),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
-    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha=.04f),Color.Black.copy(alpha=.18f),Color.Black.copy(alpha=.92f)))))
-    Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-     Text("VIREX SELECTS",color=Color.White.copy(alpha=.8f),fontSize=9.sp,letterSpacing=2.sp)
-     Text(hero.title,color=Color.White,fontSize=27.sp,fontWeight=FontWeight.SemiBold,maxLines=1,overflow=TextOverflow.Ellipsis)
-     Text(hero.artist,color=Color.White.copy(alpha=.75f),fontSize=13.sp)
-     Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.padding(top=12.dp).clip(CircleShape).background(Color.White).clickable{onPlay(hero)}.padding(horizontal=17.dp,vertical=10.dp)) { Icon(Icons.Default.PlayArrow,null,tint=Color.Black,modifier=Modifier.size(17.dp));Spacer(Modifier.width(5.dp));Text("PLAY NOW",color=Color.Black,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=1.sp) }
-    }
-   }
-  } else if(busy) item { Box(Modifier.fillMaxWidth().height(210.dp),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Color.White)} }
-  else if(message!=null) item { Text(message,color=Grey,fontSize=12.sp,modifier=Modifier.padding(vertical=22.dp)) }
-  item { SectionHeader("MADE FOR YOUR MOOD") }
   item {
-   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-    listOf("Daily mix" to "Your next repeat", "After hours" to "Low lights, loud feelings").forEachIndexed { i,pair ->
-     Box(Modifier.weight(1f).height(110.dp).clip(RoundedCornerShape(16.dp)).background(if(i==0)Color(0xFF1D1D1D)else Color(0xFF111820)).border(1.dp,Line,RoundedCornerShape(16.dp)).clickable{onCategory(if(i==0)"Trending" else "Lofi")}.padding(13.dp),contentAlignment=Alignment.BottomStart) {
-      Text(pair.first,color=Color.White,fontSize=16.sp,fontWeight=FontWeight.Medium);Text(pair.second,color=Grey,fontSize=9.sp,modifier=Modifier.align(Alignment.TopStart))
+   Row(
+    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+    horizontalArrangement = Arrangement.spacedBy(9.dp)
+   ) {
+    listOf("For you", "Trending", "Punjabi", "Hip-hop", "Lofi", "Romance").forEachIndexed { index, label ->
+     val selected = index == 0
+     Box(
+      modifier = Modifier.clip(CircleShape)
+       .background(if (selected) Color.White else Color(0xFF101010))
+       .border(1.dp, if (selected) Color.White else Color(0xFF303030), CircleShape)
+       .clickable { onCategory(label) }
+       .padding(horizontal = 17.dp, vertical = 11.dp)
+     ) {
+      Text(label, color = if (selected) Color.Black else Color.White, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
      }
     }
    }
   }
-  item { SectionHeader("TRENDING RIGHT NOW") }
-  items(songs.drop(1).take(9),key={it.id}) { SongRow(it,onPlay,{}) }
-  item { SectionHeader("QUICK PICKS") }
   item {
-   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-    songs.drop(10).take(2).forEach { song ->
-     Column(Modifier.weight(1f).clickable{onPlay(song)}) {
-      AsyncImage(song.artwork.ifBlank{null},null,Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp)),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
-      Text(song.title,color=Color.White,fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=7.dp))
-      Text(song.artist,color=Grey,fontSize=10.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+     Text("EDITOR'S PICK", color = Grey, fontSize = 10.sp, letterSpacing = 2.2.sp, modifier = Modifier.weight(1f))
+     Text("01 / FEATURED", color = Grey, fontSize = 9.sp, letterSpacing = 1.sp)
+    }
+    if (songs.isNotEmpty()) {
+     val hero = songs.first()
+     Box(
+      Modifier.fillMaxWidth().height(270.dp).clip(RoundedCornerShape(20.dp))
+       .background(Color(0xFF151515)).clickable { onPlay(hero) }
+     ) {
+      AsyncImage(hero.artwork.ifBlank { null }, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+      Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha = .02f), Color.Black.copy(alpha = .22f), Color.Black.copy(alpha = .88f)))))
+      Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+       Text("CURATED FOR YOU", color = Color.White.copy(alpha = .78f), fontSize = 9.sp, letterSpacing = 2.sp)
+       Text(hero.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+       Text(hero.artist, color = Color.White.copy(alpha = .78f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+       Row(
+        modifier = Modifier.padding(top = 9.dp).clip(CircleShape).background(Color.White)
+         .clickable { onPlay(hero) }.padding(horizontal = 18.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+       ) {
+        Icon(Icons.Default.PlayArrow, null, tint = Color.Black, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(5.dp))
+        Text("PLAY", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+       }
+      }
+     }
+    } else if (busy) {
+     Box(Modifier.fillMaxWidth().height(210.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+    } else {
+     Text(message ?: "Your mix is waiting. Pull to try again.", color = Grey, fontSize = 12.sp)
+    }
+   }
+  }
+  item {
+   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Text("PICK A MOOD", color = Grey, fontSize = 10.sp, letterSpacing = 2.2.sp)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+     listOf("Late night" to "Lofi", "High energy" to "Trending").forEachIndexed { index, pair ->
+      Box(
+       Modifier.weight(1f).height(116.dp).clip(RoundedCornerShape(16.dp))
+        .background(if (index == 0) Color(0xFF171717) else Color(0xFF202020))
+        .border(1.dp, Color(0xFF303030), RoundedCornerShape(16.dp))
+        .clickable { onCategory(pair.second) }.padding(14.dp)
+      ) {
+       Text(if (index == 0) "01" else "02", color = Grey, fontSize = 9.sp, letterSpacing = 1.5.sp)
+       Column(Modifier.align(Alignment.BottomStart)) {
+        Text(pair.first, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Text("EXPLORE MIX", color = Grey, fontSize = 8.sp, letterSpacing = 1.4.sp, modifier = Modifier.padding(top = 4.dp))
+       }
+      }
      }
     }
    }
   }
-  item { Spacer(Modifier.height(20.dp));Text("RECENTLY PLAYED",color=Grey,fontSize=10.sp,letterSpacing=2.sp);Text("Your listening history will build up here.",color=Grey,fontSize=11.sp,modifier=Modifier.padding(top=8.dp)) }
+  item {
+   Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+     Text("TRENDING NOW", color = Grey, fontSize = 10.sp, letterSpacing = 2.2.sp, modifier = Modifier.weight(1f))
+     Text("FRESH PICKS", color = Grey, fontSize = 8.sp, letterSpacing = 1.sp)
+    }
+    if (songs.size > 1) items(songs.drop(1).take(6), key = { it.id }) { song -> SongRow(song, onPlay, {}) }
+    else Text("Popular tracks will appear here.", color = Grey, fontSize = 11.sp)
+   }
+  }
+  item {
+   Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Text("QUICK PICKS", color = Grey, fontSize = 10.sp, letterSpacing = 2.2.sp)
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+     songs.drop(7).take(3).forEach { song ->
+      Column(Modifier.weight(1f).clickable { onPlay(song) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+       AsyncImage(song.artwork.ifBlank { null }, null, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(13.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+       Text(song.title, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+       Text(song.artist, color = Grey, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+     }
+    }
+   }
+  }
+  item { Text("MORE MUSIC. LESS NOISE.", color = Grey, fontSize = 9.sp, letterSpacing = 2.sp, modifier = Modifier.padding(top = 4.dp)) }
  }
 }
+
 @Composable private fun SearchScreen(query:String,onQuery:(String)->Unit,results:List<Song>,recents:List<RecentSearch>,busy:Boolean,message:String?,onSearch:(String)->Unit,onClear:()->Unit,onPlay:(Song)->Unit,onAdd:(Song)->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal=18.dp)) {
   Text("Search",color=Color.White,fontSize=24.sp,fontWeight=FontWeight.Light,modifier=Modifier.padding(top=12.dp,bottom=12.dp))
