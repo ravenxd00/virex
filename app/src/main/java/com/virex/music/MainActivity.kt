@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -165,22 +168,64 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
  }
 }
 
-@Composable private fun HomeScreen(songs: List<Song>, busy: Boolean, message: String?, artwork: String, onPlay: (Song)->Unit, onCategory:(String)->Unit, onSettings:()->Unit) {
- LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp)) {
-  item { Row(verticalAlignment = Alignment.CenterVertically) { Text("Virex Music", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Light, modifier = Modifier.weight(1f)); GlassIcon(Icons.Default.Settings, onSettings) } }
-  item { Text("DISCOVER", color = Grey, fontSize = 10.sp, letterSpacing = 2.sp, modifier = Modifier.padding(top = 26.dp, bottom = 12.dp)) }
-  item { Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) { listOf("Trending","Punjabi","Hip Hop","Bollywood","Lofi").forEach { category -> Text(category, color = Color.White, fontSize = 11.sp, modifier = Modifier.clip(CircleShape).border(1.dp, Line, CircleShape).clickable { onCategory(category) }.padding(horizontal = 12.dp, vertical = 8.dp)) } } }
-  item { SectionHeader("TRENDING MIX") }
-  if (busy) item { LinearProgressIndicator(progress = 0.5f, modifier = Modifier.fillMaxWidth(), color = Color.White, trackColor = Glass) }
-  if (message != null && songs.isEmpty()) item { Text(message, color = Grey, fontSize = 12.sp) }
-  items(songs.take(8), key = { it.id }) { SongRow(it, onPlay, {}) }
+@Composable private fun HomeScreen(songs:List<Song>,busy:Boolean,message:String?,artwork:String,onPlay:(Song)->Unit,onCategory:(String)->Unit,onSettings:()->Unit) {
+ LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(start=18.dp,end=18.dp,top=10.dp,bottom=18.dp)) {
+  item {
+   Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.padding(bottom=24.dp)) {
+    Column(Modifier.weight(1f)) { Text("VIREX",color=Color.White,fontSize=22.sp,fontWeight=FontWeight.SemiBold,letterSpacing=3.sp); Text("MUSIC, IN MOTION",color=Grey,fontSize=9.sp,letterSpacing=2.sp) }
+    GlassIcon(Icons.Default.Settings,onSettings,38)
+   }
+  }
+  item { Text("GOOD MUSIC.\nNO DISTRACTIONS.",color=Color.White,fontSize=32.sp,lineHeight=36.sp,fontWeight=FontWeight.Light,letterSpacing=(-1).sp,modifier=Modifier.padding(bottom=18.dp)) }
+  item {
+   Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.padding(bottom=24.dp)) {
+    listOf("For you","Trending","Punjabi","Hip-hop","Lofi").forEachIndexed { i,label ->
+     Text(label,color=if(i==0)Color.Black else Color.White,fontSize=11.sp,modifier=Modifier.clip(CircleShape).background(if(i==0)Color.White else Color(0xFF151515)).border(1.dp,if(i==0)Color.White else Line,CircleShape).clickable{onCategory(label)}.padding(horizontal=14.dp,vertical=9.dp))
+    }
+   }
+  }
+  item { SectionHeader("IN THE SPOTLIGHT") }
+  if(songs.isNotEmpty()) item {
+   val hero=songs.first()
+   Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(22.dp)).background(Color(0xFF171717)).clickable{onPlay(hero)}) {
+    AsyncImage(hero.artwork.ifBlank{null},null,Modifier.fillMaxSize(),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
+    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha=.04f),Color.Black.copy(alpha=.18f),Color.Black.copy(alpha=.92f)))))
+    Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
+     Text("VIREX SELECTS",color=Color.White.copy(alpha=.8f),fontSize=9.sp,letterSpacing=2.sp)
+     Text(hero.title,color=Color.White,fontSize=27.sp,fontWeight=FontWeight.SemiBold,maxLines=1,overflow=TextOverflow.Ellipsis)
+     Text(hero.artist,color=Color.White.copy(alpha=.75f),fontSize=13.sp)
+     Row(verticalAlignment=Alignment.CenterVertically,modifier=Modifier.padding(top=12.dp).clip(CircleShape).background(Color.White).clickable{onPlay(hero)}.padding(horizontal=17.dp,vertical=10.dp)) { Icon(Icons.Default.PlayArrow,null,tint=Color.Black,modifier=Modifier.size(17.dp));Spacer(Modifier.width(5.dp));Text("PLAY NOW",color=Color.Black,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=1.sp) }
+    }
+   }
+  } else if(busy) item { Box(Modifier.fillMaxWidth().height(210.dp),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Color.White)} }
+  else if(message!=null) item { Text(message,color=Grey,fontSize=12.sp,modifier=Modifier.padding(vertical=22.dp)) }
+  item { SectionHeader("MADE FOR YOUR MOOD") }
+  item {
+   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+    listOf("Daily mix" to "Your next repeat", "After hours" to "Low lights, loud feelings").forEachIndexed { i,pair ->
+     Box(Modifier.weight(1f).height(110.dp).clip(RoundedCornerShape(16.dp)).background(if(i==0)Color(0xFF1D1D1D)else Color(0xFF111820)).border(1.dp,Line,RoundedCornerShape(16.dp)).clickable{onCategory(if(i==0)"Trending" else "Lofi")}.padding(13.dp),contentAlignment=Alignment.BottomStart) {
+      Text(pair.first,color=Color.White,fontSize=16.sp,fontWeight=FontWeight.Medium);Text(pair.second,color=Grey,fontSize=9.sp,modifier=Modifier.align(Alignment.TopStart))
+     }
+    }
+   }
+  }
+  item { SectionHeader("TRENDING RIGHT NOW") }
+  items(songs.drop(1).take(9),key={it.id}) { SongRow(it,onPlay,{}) }
   item { SectionHeader("QUICK PICKS") }
-  items(songs.drop(8).take(8), key = { it.id }) { SongRow(it, onPlay, {}) }
-  item { SectionHeader("RECENTLY PLAYED") }
-  item { Text("Recently played tracks will appear here.", color = Grey, fontSize = 12.sp) }
+  item {
+   Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+    songs.drop(10).take(2).forEach { song ->
+     Column(Modifier.weight(1f).clickable{onPlay(song)}) {
+      AsyncImage(song.artwork.ifBlank{null},null,Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp)),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
+      Text(song.title,color=Color.White,fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=7.dp))
+      Text(song.artist,color=Grey,fontSize=10.sp,maxLines=1,overflow=TextOverflow.Ellipsis)
+     }
+    }
+   }
+  }
+  item { Spacer(Modifier.height(20.dp));Text("RECENTLY PLAYED",color=Grey,fontSize=10.sp,letterSpacing=2.sp);Text("Your listening history will build up here.",color=Grey,fontSize=11.sp,modifier=Modifier.padding(top=8.dp)) }
  }
 }
-
 @Composable private fun SearchScreen(query:String,onQuery:(String)->Unit,results:List<Song>,recents:List<RecentSearch>,busy:Boolean,message:String?,onSearch:(String)->Unit,onClear:()->Unit,onPlay:(Song)->Unit,onAdd:(Song)->Unit) {
  Column(Modifier.fillMaxSize().padding(horizontal=18.dp)) {
   Text("Search",color=Color.White,fontSize=24.sp,fontWeight=FontWeight.Light,modifier=Modifier.padding(top=12.dp,bottom=12.dp))
@@ -217,29 +262,71 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
  var panel by remember(song.id){mutableStateOf("Player")}
  var lyrics by remember(song.id){mutableStateOf<LyricsResult?>(null)}
  var lyricsLoading by remember(song.id){mutableStateOf(false)}
+ val lyricListState=androidx.compose.foundation.lazy.rememberLazyListState()
+ val activeIndex=lyrics?.lines?.indexOfLast{it.timeMs!=null&&it.timeMs<=state.position.toLong()}?:-1
  LaunchedEffect(song.id){lyricsLoading=true;lyrics=runCatching{MusicApi.lyrics(song)}.getOrNull();lyricsLoading=false}
- Column(Modifier.fillMaxSize().background(Color.Black).padding(horizontal=22.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-  Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically){IconButton(onClick=onClose){Icon(Icons.Default.KeyboardArrowDown,null,tint=Color.White,modifier=Modifier.size(30.dp))};Spacer(Modifier.weight(1f));Column(horizontalAlignment=Alignment.CenterHorizontally){Text(if(panel=="Player")"NOW PLAYING" else panel.uppercase(),color=Grey,fontSize=10.sp,letterSpacing=1.5.sp);Text("Virex Music",color=Color.White,fontSize=12.sp)};Spacer(Modifier.weight(1f));GlassIcon(Icons.Default.FavoriteBorder,{onFavorite(song)},38)}
-  when(panel){
-   "Queue"->{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("UP NEXT",color=Grey,fontSize=10.sp,letterSpacing=2.sp,modifier=Modifier.weight(1f));TextButton(onClick={panel="Player"}){Text("Back",color=Grey)}};LazyColumn{itemsIndexed(state.queue){i,item->SongRow(item,{onJump(i);panel="Player"},{})}}}
-   "Lyrics"->{Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text("LYRICS",color=Grey,fontSize=10.sp,letterSpacing=2.sp,modifier=Modifier.weight(1f));TextButton(onClick={panel="Player"}){Text("Back",color=Grey)}};if(lyricsLoading)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Color.White)}else if(lyrics?.lines.isNullOrEmpty())Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("Lyrics unavailable",color=Grey)}else LazyColumn(contentPadding=PaddingValues(vertical=14.dp)){itemsIndexed(lyrics!!.lines){i,line->val active=line.timeMs!=null&&line.timeMs<=state.position.toLong();Text(line.text,color=if(active)Color.White else Grey,fontSize=if(active)21.sp else 18.sp,fontWeight=if(active)FontWeight.SemiBold else FontWeight.Normal,modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if(active)Color(0xFF191919)else Color.Transparent).then(if(active)Modifier.border(1.dp,Line,RoundedCornerShape(14.dp))else Modifier).padding(13.dp))}}}
-   else->{
+ LaunchedEffect(activeIndex,panel){if(panel=="Lyrics"&&activeIndex>=0)runCatching{lyricListState.animateScrollToItem(activeIndex)}}
+ Box(Modifier.fillMaxSize().background(Color.Black)) {
+  AsyncImage(song.artwork.ifBlank{null},null,Modifier.fillMaxWidth().height(480.dp).align(Alignment.TopCenter).blur(55.dp).alpha(.24f),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
+  Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha=.22f),Color.Black.copy(alpha=.84f),Color.Black))))
+  Column(Modifier.fillMaxSize().padding(horizontal=22.dp)) {
+   Row(Modifier.fillMaxWidth().height(58.dp),verticalAlignment=Alignment.CenterVertically) {
+    GlassIcon(Icons.Default.KeyboardArrowDown,onClose,38)
     Spacer(Modifier.weight(1f))
-    Box(contentAlignment=Alignment.Center){AsyncImage(song.artwork.ifBlank{null},null,Modifier.size(244.dp).clip(CircleShape).border(2.dp,Color.White.copy(alpha=.55f),CircleShape));Canvas(Modifier.size(258.dp)){val sweep=if(state.duration>0)state.position.toFloat()/state.duration else 0f;drawArc(Color.White,startAngle=-90f,sweepAngle=sweep*360f,useCenter=false,style=androidx.compose.ui.graphics.drawscope.Stroke(width=2.dp.toPx()));val angle=Math.toRadians((sweep*360f-90f).toDouble());val radius=size.minDimension/2;drawCircle(Color(0xFFFF4040),radius=4.dp.toPx(),center=androidx.compose.ui.geometry.Offset((size.width/2+radius*kotlin.math.cos(angle)).toFloat(),(size.height/2+radius*kotlin.math.sin(angle)).toFloat()))}}
-    Text(song.title,color=Color.White,fontSize=24.sp,fontWeight=FontWeight.Light,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=20.dp))
-    Text(song.artist,color=Grey,fontSize=14.sp)
-    val activeLine=lyrics?.lines?.lastOrNull{it.timeMs!=null&&it.timeMs<=state.position.toLong()}
-    Text(activeLine?.text?: " ",color=Color.White.copy(alpha=.85f),fontSize=13.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.padding(top=16.dp))
-    Slider(value=if(state.duration>0)state.position.toFloat()/state.duration else 0f,onValueChange={onSeek((it*state.duration).toInt())},colors=SliderDefaults.colors(thumbColor=Color.White,activeTrackColor=Color.White,inactiveTrackColor=Grey))
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(timeLabel(state.position),color=Grey,fontSize=10.sp);Text(timeLabel(state.duration),color=Grey,fontSize=10.sp)}
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly,verticalAlignment=Alignment.CenterVertically){GlassIcon(Icons.Default.Shuffle,onShuffle);GlassIcon(Icons.Default.SkipPrevious,onPrevious);GlassIcon(if(state.playing)Icons.Default.Pause else Icons.Default.PlayArrow,onToggle,56);GlassIcon(Icons.Default.SkipNext,onNext);GlassIcon(Icons.Default.Repeat,onRepeat)}
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){TextButton(onClick={panel="Queue"}){Text("Queue",color=Grey,fontSize=11.sp)};TextButton(onClick={panel="Lyrics"}){Text("Lyrics",color=Grey,fontSize=11.sp)};TextButton(onClick={onSleep(if(sleep==0)10 else if(sleep==10)20 else if(sleep==20)30 else 0)}){Text(if(sleep==0)"Sleep" else "Sleep · ${sleep}m",color=Grey,fontSize=11.sp)};TextButton(onClick={onHq(!hq)}){Text(if(hq)"HQ · 320" else "160",color=Grey,fontSize=11.sp)}}
+    Column(horizontalAlignment=Alignment.CenterHorizontally){Text(if(panel=="Player")"NOW PLAYING" else panel.uppercase(),color=Grey,fontSize=9.sp,letterSpacing=2.sp);Text("VIREX MUSIC",color=Color.White,fontSize=11.sp,letterSpacing=1.5.sp)}
     Spacer(Modifier.weight(1f))
+    GlassIcon(Icons.Default.MoreHoriz,{if(panel=="Player")panel="Queue" else panel="Player"},38)
+   }
+   when(panel) {
+    "Queue" -> {
+     Row(Modifier.fillMaxWidth().padding(top=22.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("YOUR SOUNDTRACK",color=Grey,fontSize=9.sp,letterSpacing=2.sp);Text("Up next",color=Color.White,fontSize=28.sp,fontWeight=FontWeight.Light)};TextButton(onClick={panel="Player"}){Text("DONE",color=Color.White,fontSize=10.sp,letterSpacing=1.sp)}}
+     LazyColumn { itemsIndexed(state.queue){i,item->Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(if(i==state.index)Color.White.copy(alpha=.09f)else Color.Transparent).clickable{onJump(i);panel="Player"}.padding(9.dp),verticalAlignment=Alignment.CenterVertically){AsyncImage(item.artwork.ifBlank{null},null,Modifier.size(48.dp).clip(RoundedCornerShape(9.dp)),contentScale=androidx.compose.ui.layout.ContentScale.Crop);Column(Modifier.weight(1f).padding(horizontal=11.dp)){Text(item.title,color=if(i==state.index)Color.White else Color.White.copy(alpha=.85f),fontSize=13.sp,maxLines=1,overflow=TextOverflow.Ellipsis);Text(item.artist,color=Grey,fontSize=10.sp,maxLines=1)};if(i==state.index)Icon(Icons.Default.GraphicEq,null,tint=Color.White,modifier=Modifier.size(18.dp))}} }
+    }
+    "Lyrics" -> {
+     Row(Modifier.fillMaxWidth().padding(top=20.dp,bottom=14.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text("SING ALONG",color=Grey,fontSize=9.sp,letterSpacing=2.sp);Text("Lyrics",color=Color.White,fontSize=30.sp,fontWeight=FontWeight.Light)};TextButton(onClick={panel="Player"}){Text("CLOSE",color=Color.White,fontSize=10.sp)}}
+     Box(Modifier.fillMaxSize().padding(bottom=14.dp).clip(RoundedCornerShape(24.dp)).background(Color.White.copy(alpha=.055f)).border(1.dp,Color.White.copy(alpha=.10f),RoundedCornerShape(24.dp))) {
+      Column(Modifier.fillMaxSize().padding(horizontal=18.dp,vertical=15.dp)) {
+       Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Mic,null,tint=Color.White,modifier=Modifier.size(17.dp));Text("  ${song.title}",color=Color.White,fontSize=13.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis)}
+       HorizontalDivider(color=Color.White.copy(alpha=.10f),modifier=Modifier.padding(top=13.dp,bottom=10.dp))
+       if(lyricsLoading)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){CircularProgressIndicator(color=Color.White,strokeWidth=2.dp)}
+       else if(lyrics?.lines.isNullOrEmpty())Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("Lyrics aren't available for this track.",color=Grey,fontSize=13.sp)}
+       else LazyColumn(state=lyricListState,contentPadding=PaddingValues(vertical=20.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
+        itemsIndexed(lyrics!!.lines){i,line->
+         val active=i==activeIndex
+         Text(line.text,color=if(active)Color.White else Color.White.copy(alpha=.32f),fontSize=if(active)24.sp else 20.sp,lineHeight=if(active)31.sp else 27.sp,fontWeight=if(active)FontWeight.SemiBold else FontWeight.Medium,modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(if(active)Color.White.copy(alpha=.07f)else Color.Transparent).then(if(active)Modifier.border(1.dp,Color.White.copy(alpha=.12f),RoundedCornerShape(15.dp))else Modifier).padding(horizontal=14.dp,vertical=13.dp))
+        }
+       }
+      }
+     }
+    }
+    else -> {
+     Spacer(Modifier.weight(.45f))
+     Box(Modifier.fillMaxWidth(),contentAlignment=Alignment.Center) {
+      AsyncImage(song.artwork.ifBlank{null},null,Modifier.size(286.dp).clip(RoundedCornerShape(20.dp)).border(1.dp,Color.White.copy(alpha=.15f),RoundedCornerShape(20.dp)),contentScale=androidx.compose.ui.layout.ContentScale.Crop)
+      Canvas(Modifier.size(302.dp)) {
+       val progress=if(state.duration>0)state.position.toFloat()/state.duration else 0f
+       drawArc(Color.White.copy(alpha=.85f),-90f,progress*360f,false,style=androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx()))
+       val a=Math.toRadians((progress*360f-90f).toDouble());val r=size.minDimension/2
+       drawCircle(Color(0xFFEAEAEA),3.dp.toPx(),androidx.compose.ui.geometry.Offset((size.width/2+r*kotlin.math.cos(a)).toFloat(),(size.height/2+r*kotlin.math.sin(a)).toFloat()))
+      }
+     }
+     Row(Modifier.fillMaxWidth().padding(top=24.dp),verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(song.title,color=Color.White,fontSize=27.sp,fontWeight=FontWeight.SemiBold,maxLines=1,overflow=TextOverflow.Ellipsis);Text(song.artist,color=Grey,fontSize=14.sp,modifier=Modifier.padding(top=3.dp))};GlassIcon(Icons.Default.FavoriteBorder,{onFavorite(song)},42)}
+     val currentLine=lyrics?.lines?.getOrNull(activeIndex)?.text
+     Text(currentLine?: " ",color=Color.White.copy(alpha=.75f),fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis,modifier=Modifier.fillMaxWidth().padding(top=16.dp,bottom=4.dp).clickable{panel="Lyrics"})
+     Slider(value=if(state.duration>0)state.position.toFloat()/state.duration else 0f,onValueChange={onSeek((it*state.duration).toInt())},modifier=Modifier.height(32.dp),colors=SliderDefaults.colors(thumbColor=Color.White,activeTrackColor=Color.White,inactiveTrackColor=Color.White.copy(alpha=.20f)))
+     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Text(timeLabel(state.position),color=Grey,fontSize=10.sp);Text(timeLabel(state.duration),color=Grey,fontSize=10.sp)}
+     Row(Modifier.fillMaxWidth().padding(top=16.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){GlassIcon(Icons.Default.Shuffle,onShuffle,40);GlassIcon(Icons.Default.SkipPrevious,onPrevious,44);GlassIcon(if(state.playing)Icons.Default.Pause else Icons.Default.PlayArrow,onToggle,58);GlassIcon(Icons.Default.SkipNext,onNext,44);GlassIcon(Icons.Default.Repeat,onRepeat,40)}
+     Row(Modifier.fillMaxWidth().padding(top=18.dp,bottom=20.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+      TextButton(onClick={panel="Queue"}){Icon(Icons.Default.QueueMusic,null,tint=Grey,modifier=Modifier.size(15.dp));Spacer(Modifier.width(5.dp));Text("QUEUE",color=Grey,fontSize=9.sp,letterSpacing=1.sp)}
+      TextButton(onClick={panel="Lyrics"}){Icon(Icons.Default.Mic,null,tint=Grey,modifier=Modifier.size(15.dp));Spacer(Modifier.width(5.dp));Text("LYRICS",color=Grey,fontSize=9.sp,letterSpacing=1.sp)}
+      TextButton(onClick={onSleep(if(sleep==0)10 else if(sleep==10)20 else if(sleep==20)30 else 0)}){Icon(Icons.Default.Bedtime,null,tint=Grey,modifier=Modifier.size(15.dp));Spacer(Modifier.width(4.dp));Text(if(sleep==0)"SLEEP" else "${sleep}M",color=Grey,fontSize=9.sp)}
+      TextButton(onClick={onHq(!hq)}){Text(if(hq)"HQ 320" else "160",color=Grey,fontSize=9.sp,letterSpacing=1.sp)}
+     }
+    }
    }
   }
  }
 }
-
 @Composable private fun SettingsScreen(hq:Boolean,onHq:(Boolean)->Unit,crossfade:Int,onCrossfade:(Int)->Unit,speed:Float,onSpeed:(Float)->Unit,pureBlack:Boolean,onBlack:(Boolean)->Unit,onClear:()->Unit) {
  LazyColumn(Modifier.fillMaxSize().padding(18.dp)) {
   item{Text("Settings",color=Color.White,fontSize=24.sp,fontWeight=FontWeight.Light)}
