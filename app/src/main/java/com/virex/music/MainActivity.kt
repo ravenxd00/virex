@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 private val Black = Color.Black
 private val Glass = Color(0xFF111111)
 private val Line = Color.White.copy(alpha = .14f)
-private val Grey = Color(0xFF9A9A9A)
+val Grey = Color(0xFF9A9A9A)
 
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
@@ -277,10 +277,10 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
 @Composable private fun MiniPlayer(state:PlayerState,onOpen:()->Unit,onToggle:()->Unit,onNext:()->Unit){val song=state.song?:return;Column(Modifier.fillMaxWidth().background(Glass).clickable(onClick=onOpen).padding(horizontal=10.dp,vertical=6.dp)){LinearProgressIndicator(progress=if(state.duration>0)state.position.toFloat()/state.duration else 0f,modifier=Modifier.fillMaxWidth().height(2.dp),color=Color.White,trackColor=Line);Row(verticalAlignment=Alignment.CenterVertically){AsyncImage(song.artwork.ifBlank{null},null,Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)));Spacer(Modifier.width(9.dp));Column(Modifier.weight(1f)){Text(song.title,color=Color.White,fontSize=12.sp,maxLines=1,overflow=TextOverflow.Ellipsis);Text(song.artist,color=Grey,fontSize=10.sp)};IconButton(onClick=onToggle){Icon(if(state.playing)Icons.Default.Pause else Icons.Default.PlayArrow,null,tint=Color.White)};IconButton(onClick=onNext){Icon(Icons.Default.SkipNext,null,tint=Color.White)}}}}
 @Composable private fun SongRow(song:Song,onPlay:(Song)->Unit,onAdd:(Song)->Unit){Row(Modifier.fillMaxWidth().clickable{onPlay(song)}.padding(vertical=7.dp),verticalAlignment=Alignment.CenterVertically){AsyncImage(song.artwork.ifBlank{null},null,Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)));Spacer(Modifier.width(10.dp));Column(Modifier.weight(1f)){Text(song.title,color=Color.White,fontSize=13.sp,maxLines=1,overflow=TextOverflow.Ellipsis);Text(song.artist,color=Grey,fontSize=11.sp,maxLines=1,overflow=TextOverflow.Ellipsis)};IconButton(onClick={onAdd(song)}){Icon(Icons.Default.Add,null,tint=Grey)}}}
 @Composable private fun SectionHeader(text:String){Text(text,color=Grey,fontSize=10.sp,letterSpacing=2.sp,modifier=Modifier.padding(top=24.dp,bottom=10.dp))}
-@Composable private fun GlassIcon(icon:androidx.compose.ui.graphics.vector.ImageVector,onClick:()->Unit,size:Int=40){Box(Modifier.size(size.dp).clip(CircleShape).background(Glass).border(1.dp,Line,CircleShape).clickable(onClick=onClick),contentAlignment=Alignment.Center){Icon(icon,null,tint=Color.White,modifier=Modifier.size((size/2).dp))}}
+@Composable fun GlassIcon(icon:androidx.compose.ui.graphics.vector.ImageVector,onClick:()->Unit,size:Int=40){Box(Modifier.size(size.dp).clip(CircleShape).background(Glass).border(1.dp,Line,CircleShape).clickable(onClick=onClick),contentAlignment=Alignment.Center){Icon(icon,null,tint=Color.White,modifier=Modifier.size((size/2).dp))}}
 private fun Song.toPlaylist(id:Long,pos:Int)=PlaylistSongEntity(id,this.id,title,artist,artwork,streamUrl,highUrl,lowUrl,durationSec,pos)
 private fun PlaylistSongEntity.toSong()=Song(songId,title,artist,artwork,streamUrl,highUrl,lowUrl,durationSec)
-private fun timeLabel(ms:Int):String{val s=ms.coerceAtLeast(0)/1000;return "${s/60}:${(s%60).toString().padStart(2,'0')}"}
+fun timeLabel(ms:Int):String{val s=ms.coerceAtLeast(0)/1000;return "${s/60}:${(s%60).toString().padStart(2,'0')}"}
 private fun queryLocalAudio(context:Context):List<Pair<String,String>>{
  val collection=if(Build.VERSION.SDK_INT>=29)MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)else MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
  val out=mutableListOf<Pair<String,String>>()
