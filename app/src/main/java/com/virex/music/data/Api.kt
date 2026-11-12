@@ -66,34 +66,40 @@ object MusicApi {
         }
     }
     private fun parseArtistNames(value: Any?): String {
-        fun namesFrom(value: Any?): List<String> = when (value) {
+        fun collect(node: Any?): List<String> = when (node) {
             is String -> {
-                val raw = value.trim()
-                if (raw.startsWith("[") || raw.startsWith("{")) {
+                val raw = node.trim()
+                if (raw.isEmpty() || raw == "null") emptyList()
+                else if (raw.startsWith("[") || raw.startsWith("{")) {
                     runCatching {
-                        if (raw.startsWith("[")) namesFrom(JSONArray(raw))
-                        else namesFrom(JSONObject(raw))
+                        if (raw.startsWith("[")) collect(JSONArray(raw)) else collect(JSONObject(raw))
                     }.getOrDefault(emptyList())
-                } else if (raw.isNotBlank() && raw != "null") listOf(raw) else emptyList()
+                } else listOf(raw)
             }
-            is JSONArray -> (0 until value.length()).flatMap { i -> namesFrom(value.opt(i)) }
+            is JSONArray -> (0 until node.length()).flatMap { collect(node.opt(it)) }
             is JSONObject -> {
-                val primary = value.opt("primary")
-                val direct = namesFrom(primary)
-                if (direct.isNotEmpty()) direct
+                // JioSaavn responses commonly nest artist arrays under primary_artists.
+                val preferredKeys = listOf(
+                    "primary_artists", "primaryArtists", "primary",
+                    "artists", "featured_artists", "featuredArtists",
+                    "artist", "all"
+                )
+                val fromArrays = preferredKeys.flatMap { key ->
+                    val child = node.opt(key)
+                    if (child == null || child == node) emptyList() else collect(child)
+                }
+                if (fromArrays.isNotEmpty()) fromArrays
                 else {
-                    val nested = value.opt("artists")
-                    val fromNested = namesFrom(nested)
-                    if (fromNested.isNotEmpty()) fromNested
-                    else {
-                        val name = value.optString("name").takeIf { it.isNotBlank() && it != "null" }
-                        if (name != null) listOf(name) else emptyList()
-                    }
+                    val direct = listOf("name", "title", "artistName")
+                        .firstNotNullOfOrNull { key ->
+                            node.optString(key).takeIf { it.isNotBlank() && it != "null" }
+                        }
+                    direct?.let(::listOf).orEmpty()
                 }
             }
             else -> emptyList()
         }
-        return namesFrom(value).map { it.trim() }.filter { it.isNotBlank() }.distinct().joinToString(", ")
+        return collect(value).map(String::trim).filter(String::isNotEmpty).distinct().joinToString(", ")
     }
 
     private fun largestUrl(array: JSONArray?): String {
