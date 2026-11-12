@@ -280,7 +280,7 @@ private fun HomeScreen(
      Text("TRENDING NOW", color = Grey, fontSize = 10.sp, letterSpacing = 2.2.sp, modifier = Modifier.weight(1f))
      Text("FRESH PICKS", color = Grey, fontSize = 8.sp, letterSpacing = 1.sp)
     }
-    if (songs.size > 1) items(songs.drop(1).take(6), key = { it.id }) { song -> SongRow(song, onPlay, {}) }
+    if (songs.size > 1) songs.drop(1).take(6).forEach { song -> SongRow(song, onPlay, {}) }
     else Text("Popular tracks will appear here.", color = Grey, fontSize = 11.sp)
    }
   }
