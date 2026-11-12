@@ -53,14 +53,10 @@ object MusicApi {
             val id = o.optString("id")
             if (id.isBlank()) return@mapNotNull null
             val title = o.optString("name", o.optString("title", "Unknown title"))
-            val artists = o.optJSONObject("artists")
-            val primary = artists?.optJSONObject("primary")?.optJSONArray("artists")
-            val artist = when {
-                o.opt("artists") is String -> o.optString("artists")
-                primary != null -> (0 until primary.length()).mapNotNull { primary.optJSONObject(it)?.optString("name") }.joinToString(", ")
-                artists?.optString("primary").orEmpty().isNotBlank() -> artists.optString("primary")
-                else -> o.optString("artist", "Unknown artist")
-            }
+            val artist = parseArtistNames(o.opt("artists"))
+                .ifBlank { parseArtistNames(o.opt("artist")) }
+                .ifBlank { parseArtistNames(o.opt("primaryArtists")) }
+                .ifBlank { o.optString("artistName").takeIf { it != "null" }.orEmpty() }
             val images = o.optJSONArray("image")
             val image = largestUrl(images)
             val downloads = o.optJSONArray("downloadUrl") ?: o.optJSONArray("download_url")
@@ -69,6 +65,37 @@ object MusicApi {
             Song(id, title, artist.ifBlank { "Unknown artist" }, image, high, high, low, o.optString("duration").toIntOrNull() ?: 0)
         }
     }
+    private fun parseArtistNames(value: Any?): String {
+        fun namesFrom(value: Any?): List<String> = when (value) {
+            is String -> {
+                val raw = value.trim()
+                if (raw.startsWith("[") || raw.startsWith("{")) {
+                    runCatching {
+                        if (raw.startsWith("[")) namesFrom(JSONArray(raw))
+                        else namesFrom(JSONObject(raw))
+                    }.getOrDefault(emptyList())
+                } else if (raw.isNotBlank() && raw != "null") listOf(raw) else emptyList()
+            }
+            is JSONArray -> (0 until value.length()).flatMap { i -> namesFrom(value.opt(i)) }
+            is JSONObject -> {
+                val primary = value.opt("primary")
+                val direct = namesFrom(primary)
+                if (direct.isNotEmpty()) direct
+                else {
+                    val nested = value.opt("artists")
+                    val fromNested = namesFrom(nested)
+                    if (fromNested.isNotEmpty()) fromNested
+                    else {
+                        val name = value.optString("name").takeIf { it.isNotBlank() && it != "null" }
+                        if (name != null) listOf(name) else emptyList()
+                    }
+                }
+            }
+            else -> emptyList()
+        }
+        return namesFrom(value).map { it.trim() }.filter { it.isNotBlank() }.distinct().joinToString(", ")
+    }
+
     private fun largestUrl(array: JSONArray?): String {
         if (array == null || array.length() == 0) return ""
         val values = (0 until array.length()).mapNotNull { i ->
