@@ -144,7 +144,7 @@ private fun VirexApp(vm: PlayerViewModel = viewModel()) {
   Box(Modifier.fillMaxSize().padding(insets).background(if (pureBlack) Black else Color(0xFF080808))) {
    AnimatedContent(targetState = tab, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "main-tabs") { screen ->
     when (screen) {
-     "Home" -> HomeScreen(trending, busy, message, player.song?.artwork.orEmpty(), { playSong(it, trending) }, { category -> tab = "Search"; query = category; searchNow(category) }, { showSettings = true })
+     "Home" -> com.virex.music.ui.screens.VirexHomeScreen(trending, busy, message, { playSong(it, trending) }, { category -> tab = "Search"; query = category; searchNow(category) }, { showSettings = true })
      "Search" -> SearchScreen(query, { query = it }, results, recents, busy, message, ::searchNow, { scope.launch { dao.clearSearches(); recents = emptyList() } }, { playSong(it, results) }, { song ->
       scope.launch {
        val id = dao.createPlaylist(PlaylistEntity(name = "Favorites"))
